@@ -41,10 +41,17 @@ export function RewardsView({
     <div className="space-y-4">
       <section className="card text-center">
         <p className="text-xs font-medium uppercase tracking-wide text-sparrow-gold">Vouchers</p>
-        <p className="mt-1 font-serif text-5xl font-semibold text-sparrow-green">{unspent}</p>
+        {/* Show what's actually redeemable (available), so the number always agrees with
+            the button. Vouchers tied up in a pending request are called out below. */}
+        <p className="mt-1 font-serif text-5xl font-semibold text-sparrow-green">{available}</p>
         <p className="mt-1 text-sm text-sparrow-gray">
-          earned · {VOUCHERS_PER_REDEMPTION} vouchers = a {money(REDEMPTION_VALUE_CENTS)} gift card
+          ready to redeem · {VOUCHERS_PER_REDEMPTION} vouchers = a {money(REDEMPTION_VALUE_CENTS)} gift card
         </p>
+        {unspent > available && (
+          <p className="mt-0.5 text-xs text-sparrow-gray">
+            {unspent} earned · {unspent - available} in a pending request
+          </p>
+        )}
 
         <button onClick={redeem} disabled={!canRedeem || busy} className="btn-primary mt-4 w-full">
           {canRedeem ? `Redeem 3 for a ${money(REDEMPTION_VALUE_CENTS)} gift card` : `Earn ${VOUCHERS_PER_REDEMPTION - available} more to redeem`}
