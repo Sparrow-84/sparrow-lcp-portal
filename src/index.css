@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-sparrow-sage font-sans text-sparrow-ink antialiased;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply font-serif text-sparrow-green;
+  }
+  :focus-visible {
+    @apply outline-none ring-2 ring-sparrow-gold ring-offset-2;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-sparrow-green px-4 py-2.5 text-sm font-medium text-white transition hover:bg-sparrow-green-dark focus-visible:ring-2 focus-visible:ring-sparrow-gold disabled:opacity-50;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-sparrow-ink transition hover:bg-sparrow-sage disabled:opacity-50;
+  }
+  .field-label {
+    @apply block text-xs font-medium uppercase tracking-wide text-sparrow-gray;
+  }
+  .field-input {
+    @apply mt-1 block w-full rounded-lg border border-sparrow-rule bg-white px-3 py-2.5 text-sm text-sparrow-ink shadow-sm focus:border-sparrow-green focus:outline-none focus:ring-1 focus:ring-sparrow-green;
+  }
+  .card {
+    @apply rounded-2xl border border-sparrow-rule bg-white p-5 shadow-card;
+  }
+  /* Gamified task circle: grey ring -> filled green check on completion. */
+  .task-circle {
+    @apply grid h-7 w-7 shrink-0 place-items-center rounded-full border-2 border-sparrow-rule text-white transition-all duration-300;
+  }
+  .task-circle-done {
+    @apply border-sparrow-green bg-sparrow-green;
+  }
+}
+
+@layer utilities {
+  /* one-shot celebratory pop for a freshly completed task */
+  @keyframes pop {
+    0% {
+      transform: scale(0.6);
+    }
+    60% {
+      transform: scale(1.15);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+  .animate-pop {
+    animation: pop 0.32s ease-out;
+  }
+}
