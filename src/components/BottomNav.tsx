@@ -1,6 +1,6 @@
 export type Tab = 'home' | 'messages' | 'rewards';
 
-const TABS: { key: Tab; label: string; icon: string }[] = [
+export const TABS: { key: Tab; label: string; icon: string }[] = [
   { key: 'home', label: 'Home', icon: '🏠' },
   { key: 'messages', label: 'Messages', icon: '💬' },
   { key: 'rewards', label: 'Rewards', icon: '🎁' },
@@ -10,13 +10,17 @@ export function BottomNav({
   tab,
   onChange,
   unread = 0,
+  className = '',
 }: {
   tab: Tab;
   onChange: (t: Tab) => void;
   unread?: number;
+  className?: string;
 }) {
   return (
-    <nav className="sticky bottom-0 z-10 flex border-t border-sparrow-rule bg-white pb-[env(safe-area-inset-bottom)]">
+    <nav
+      className={`sticky bottom-0 z-10 flex border-t border-sparrow-rule bg-white pb-[env(safe-area-inset-bottom)] ${className}`}
+    >
       {TABS.map((t) => {
         const active = t.key === tab;
         return (
