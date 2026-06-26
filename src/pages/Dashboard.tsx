@@ -32,6 +32,7 @@ import { ItemDetail } from '@/components/ItemDetail';
 import { RoadmapView } from '@/components/RoadmapView';
 import { BottomNav, type Tab } from '@/components/BottomNav';
 import { SideNav } from '@/components/SideNav';
+import { GuidedTour, useGuidedTour } from '@/components/GuidedTour';
 
 type DetailView =
   | { type: 'event'; event: LcpEvent }
@@ -39,6 +40,7 @@ type DetailView =
 
 export function Dashboard() {
   const { family, signOut, refreshFamily } = useAuth();
+  const { tourOpen, dismissTour, reopenTour } = useGuidedTour();
   const [tab, setTab] = useState<Tab>('home');
   const [detail, setDetail] = useState<DetailView | null>(null);
   const [messageDraft, setMessageDraft] = useState('');
@@ -161,15 +163,26 @@ export function Dashboard() {
   // ── Main tabs ─────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-sparrow-mist md:flex">
+      {tourOpen && <GuidedTour onDismiss={dismissTour} />}
+
       <SideNav tab={tab} onChange={setTab} onSignOut={signOut} unread={unread} />
 
       <div className="mx-auto flex min-h-screen w-full max-w-phone flex-col md:mx-0 md:max-w-none md:flex-1">
         {/* Mobile header */}
         <header className="sticky top-0 z-10 flex items-center justify-between border-b border-sparrow-rule bg-white px-4 py-3 md:hidden">
           <Wordmark />
-          <button onClick={signOut} className="text-xs font-medium text-sparrow-gray hover:text-sparrow-ink">
-            Sign out
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={reopenTour}
+              className="text-xs font-medium text-sparrow-gray hover:text-sparrow-ink"
+              aria-label="Show tour"
+            >
+              ?
+            </button>
+            <button onClick={signOut} className="text-xs font-medium text-sparrow-gray hover:text-sparrow-ink">
+              Sign out
+            </button>
+          </div>
         </header>
 
         <main className="flex flex-1 flex-col overflow-hidden">
