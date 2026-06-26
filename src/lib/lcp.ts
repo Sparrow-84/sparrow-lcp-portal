@@ -7,6 +7,8 @@ import type {
   LcpEvent,
   Message,
   Redemption,
+  Resource,
+  ResourceCompletion,
   Voucher,
 } from '@/lib/types';
 
@@ -33,10 +35,77 @@ export async function getCurrentSession(sessionNumber: number): Promise<CurrentS
 export async function getHomework(familyId: string): Promise<Homework[]> {
   const { data } = await supabase
     .from('lcp_homework')
-    .select('*')
+    // NOTE: locked, sort_order added after migration 0040 — restore after Byron confirms
+    .select('id, family_id, session_id, area, title, description, due_date, status, submission_text, submitted_at')
     .eq('family_id', familyId)
+    .neq('status', 'complete')
+    .order('sort_order', { ascending: true })
     .order('due_date', { ascending: true, nullsFirst: false });
-  return (data as Homework[]) ?? [];
+  return ((data ?? []) as Omit<Homework, 'locked' | 'sort_order'>[]).map((r) => ({
+    ...r,
+    locked: false,
+    sort_order: 0,
+  })) as Homework[];
+}
+
+// ── Resources ─────────────────────────────────────────────────────────
+
+// NOTE: content, response_prompt, due_date, locked, sort_order added after migration 0040.
+// Restore the full select string after Byron confirms 0040.
+const RESOURCE_COLS =
+  'id, session_id, kind, audience, title, drive_url, created_at';
+// After 0040: replace with:
+// 'id, session_id, kind, audience, title, drive_url, created_at, content, response_prompt, due_date, locked, sort_order'
+
+export async function getSessionResources(sessionNumber: number): Promise<Resource[]> {
+  // Two-step: resolve session_number → session.id, then fetch resources for that session.
+  const { data: sess } = await supabase
+    .from('lcp_sessions')
+    .select('id')
+    .eq('session_number', sessionNumber)
+    .maybeSingle();
+  if (!sess) return [];
+
+  const { data } = await supabase
+    .from('lcp_resources')
+    .select(RESOURCE_COLS)
+    .eq('session_id', sess.id)
+    .eq('audience', 'participant')
+    .order('sort_order', { ascending: true });
+
+  return ((data ?? []) as Omit<Resource, 'content' | 'response_prompt' | 'due_date' | 'locked' | 'sort_order'>[]).map(
+    (r) => ({ ...r, content: null, response_prompt: null, due_date: null, locked: false, sort_order: 0 }),
+  ) as Resource[];
+}
+
+export async function getResourceCompletions(familyId: string): Promise<ResourceCompletion[]> {
+  const { data } = await supabase
+    .from('lcp_resource_completions')
+    .select('*')
+    .eq('family_id', familyId);
+  // Table doesn't exist until migration 0040 — return empty array on error.
+  return (data as ResourceCompletion[]) ?? [];
+}
+
+export async function completeResource(
+  resourceId: string,
+  familyId: string,
+  responseText?: string,
+): Promise<void> {
+  await supabase
+    .from('lcp_resource_completions')
+    .upsert(
+      { resource_id: resourceId, family_id: familyId, response_text: responseText ?? null },
+      { onConflict: 'family_id,resource_id' },
+    );
+}
+
+export async function uncompleteResource(resourceId: string, familyId: string): Promise<void> {
+  await supabase
+    .from('lcp_resource_completions')
+    .delete()
+    .eq('resource_id', resourceId)
+    .eq('family_id', familyId);
 }
 
 /** Participant action: mark complete / submit online, or reopen. */
@@ -54,6 +123,28 @@ export async function setHomeworkStatus(
     patch.submitted_at = null;
   }
   await supabase.from('lcp_homework').update(patch).eq('id', id);
+}
+
+function weekBounds(): { start: string; end: string } {
+  const now = new Date();
+  const sun = new Date(now);
+  sun.setDate(now.getDate() - now.getDay()); // back to Sunday
+  sun.setHours(0, 0, 0, 0);
+  const sat = new Date(sun);
+  sat.setDate(sun.getDate() + 6);
+  sat.setHours(23, 59, 59, 999);
+  return { start: sun.toISOString(), end: sat.toISOString() };
+}
+
+export async function getThisWeekEvents(): Promise<LcpEvent[]> {
+  const { start, end } = weekBounds();
+  const { data } = await supabase
+    .from('lcp_events')
+    .select('id, kind, title, starts_at, ends_at, location, mandatory, rsvp_enabled')
+    .gte('starts_at', start)
+    .lte('starts_at', end)
+    .order('starts_at', { ascending: true });
+  return (data as LcpEvent[]) ?? [];
 }
 
 export async function getUpcomingEvents(limit = 6): Promise<LcpEvent[]> {

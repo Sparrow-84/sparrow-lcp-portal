@@ -1,9 +1,10 @@
-export type Tab = 'home' | 'messages' | 'rewards';
+export type Tab = 'home' | 'messages' | 'rewards' | 'roadmap';
 
 export const TABS: { key: Tab; label: string; icon: string }[] = [
   { key: 'home', label: 'Home', icon: '🏠' },
   { key: 'messages', label: 'Messages', icon: '💬' },
   { key: 'rewards', label: 'Rewards', icon: '🎁' },
+  { key: 'roadmap', label: 'My Journey', icon: '🗺️' },
 ];
 
 export function BottomNav({

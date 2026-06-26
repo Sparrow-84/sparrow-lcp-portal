@@ -7,12 +7,14 @@ export function MessagesView({
   familyId,
   messages,
   onChange,
+  initialDraft = '',
 }: {
   familyId: string;
   messages: Message[];
   onChange: () => void;
+  initialDraft?: string;
 }) {
-  const [draft, setDraft] = useState('');
+  const [draft, setDraft] = useState(initialDraft);
   const [busy, setBusy] = useState(false);
 
   async function send(e: FormEvent) {
@@ -29,8 +31,8 @@ export function MessagesView({
   return (
     <section className="flex h-full flex-col">
       <div className="border-b border-sparrow-rule px-4 py-3">
-        <h2 className="font-serif text-lg font-semibold">Messages from LCP Staff</h2>
-        <p className="text-xs text-sparrow-gray">Shelly and the LifeChange team are on the other side.</p>
+        <h2 className="font-serif text-lg font-semibold">Messages</h2>
+        <p className="text-xs text-sparrow-gray">Your LifeChange team is on the other side.</p>
       </div>
 
       <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4">

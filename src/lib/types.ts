@@ -11,6 +11,7 @@ export type AttendanceStatus = 'on_time' | 'late' | 'no_show';
 export type HomeworkArea = 'relational' | 'physical_financial' | 'spiritual' | 'emotional' | 'general';
 export type HomeworkStatus = 'assigned' | 'submitted' | 'complete';
 export type MessageSender = 'staff' | 'family';
+export type ResourceKind = 'handout' | 'teacher_guide' | 'devotional' | 'ppt' | 'art' | 'other';
 
 export interface Family {
   id: string;
@@ -38,6 +39,51 @@ export interface Homework {
   status: HomeworkStatus;
   submission_text: string | null;
   submitted_at: string | null;
+  // Added by migration 0040 — null-safe until Byron runs it
+  locked: boolean;
+  sort_order: number;
+}
+
+export interface Resource {
+  id: string;
+  session_id: number | null;
+  kind: ResourceKind;
+  audience: 'participant' | 'staff';
+  title: string;
+  drive_url: string | null;
+  created_at: string;
+  // Added by migration 0040 — null until Byron runs it
+  content: string | null;
+  response_prompt: string | null;
+  due_date: string | null;
+  locked: boolean;
+  sort_order: number;
+}
+
+export interface ResourceCompletion {
+  id: string;
+  family_id: string;
+  resource_id: string;
+  response_text: string | null;
+  completed_at: string;
+}
+
+// Unified weekly item — either a resource or homework entry.
+// Used by the items list and item detail view.
+export type WeekItem =
+  | { kind: 'resource'; data: Resource; done: boolean }
+  | { kind: 'homework'; data: Homework; done: boolean };
+
+export function weekItemSortKey(item: WeekItem): number {
+  return item.kind === 'resource' ? item.data.sort_order : item.data.sort_order;
+}
+
+export function weekItemDueDate(item: WeekItem): string | null {
+  return item.kind === 'resource' ? item.data.due_date : item.data.due_date;
+}
+
+export function weekItemLocked(item: WeekItem): boolean {
+  return item.kind === 'resource' ? item.data.locked : item.data.locked;
 }
 
 export interface LcpEvent {
@@ -102,4 +148,22 @@ export const EVENT_LABEL: Record<EventKind, string> = {
   one_on_one: 'One-on-one',
   volunteer: 'Volunteer',
   other: 'Event',
+};
+
+export const RESOURCE_LABEL: Record<ResourceKind, string> = {
+  handout: 'Handout',
+  teacher_guide: 'Guide',
+  devotional: 'Devotional',
+  ppt: 'Slides',
+  art: 'Activity',
+  other: 'Resource',
+};
+
+export const RESOURCE_ICON: Record<ResourceKind, string> = {
+  handout: '📋',
+  teacher_guide: '📖',
+  devotional: '✦',
+  ppt: '📊',
+  art: '🎨',
+  other: '📄',
 };
