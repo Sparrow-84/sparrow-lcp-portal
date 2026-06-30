@@ -1,10 +1,11 @@
-export type Tab = 'home' | 'messages' | 'rewards' | 'roadmap';
+export type Tab = 'home' | 'goals' | 'messages' | 'rewards' | 'roadmap';
 
 export const TABS: { key: Tab; label: string; icon: string }[] = [
   { key: 'home', label: 'Home', icon: '🏠' },
+  { key: 'goals', label: 'Goals', icon: '⭐' },
   { key: 'messages', label: 'Messages', icon: '💬' },
   { key: 'rewards', label: 'Rewards', icon: '🎁' },
-  { key: 'roadmap', label: 'My Journey', icon: '🗺️' },
+  { key: 'roadmap', label: 'Journey', icon: '🗺️' },
 ];
 
 export function BottomNav({

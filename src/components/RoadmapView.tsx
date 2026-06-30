@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import type { Resource } from '@/lib/types';
+import { getFinanceMilestones, getMilestoneProgress } from '@/lib/lcp';
+import type { FinanceMilestone, FamilyMilestoneProgress, Resource } from '@/lib/types';
 import { RESOURCE_ICON, RESOURCE_LABEL } from '@/lib/types';
 
 interface RoadmapSession {
@@ -120,16 +121,35 @@ function UnitResources({ unitId }: { unitId: number }) {
   );
 }
 
-export function RoadmapView({ currentSession }: { currentSession: number }) {
+export function RoadmapView({
+  currentSession,
+  familyId,
+}: {
+  currentSession: number;
+  familyId: string;
+}) {
   const [phases, setPhases] = useState<RoadmapPhase[] | null>(null);
   const [openUnit, setOpenUnit] = useState<number | null>(null);
+  const [milestones, setMilestones] = useState<FinanceMilestone[]>([]);
+  const [milestoneProgress, setMilestoneProgress] = useState<FamilyMilestoneProgress[]>([]);
 
   useEffect(() => {
     fetchRoadmap().then(setPhases);
   }, []);
 
+  useEffect(() => {
+    if (!familyId) return;
+    Promise.all([getFinanceMilestones(), getMilestoneProgress(familyId)]).then(
+      ([ms, mp]) => { setMilestones(ms); setMilestoneProgress(mp); },
+    );
+  }, [familyId]);
+
   if (phases === null)
     return <p className="p-8 text-center text-sm text-sparrow-gray">Loading your journey…</p>;
+
+  const completedMilestoneIds = new Set(milestoneProgress.map((p) => p.milestone_id));
+  const milestonesCompleted = completedMilestoneIds.size;
+  const nextMilestone = milestones.find((m) => !completedMilestoneIds.has(m.id));
 
   return (
     <div className="space-y-6">
@@ -139,6 +159,73 @@ export function RoadmapView({ currentSession }: { currentSession: number }) {
           See where you've been and where you're going.
         </p>
       </div>
+
+      {milestones.length > 0 && (
+        <section className="card space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-sparrow-gold">
+                Financial pathway
+              </p>
+              <h2 className="mt-0.5 font-serif text-lg font-semibold text-sparrow-green">
+                Building Your Foundation
+              </h2>
+            </div>
+            <div className="text-right">
+              <p className="font-serif text-2xl font-semibold text-sparrow-green">
+                {milestonesCompleted}
+              </p>
+              <p className="text-xs text-sparrow-gray">of {milestones.length}</p>
+            </div>
+          </div>
+
+          <ul className="space-y-2">
+            {milestones.map((m) => {
+              const done = completedMilestoneIds.has(m.id);
+              const isNext = m.id === nextMilestone?.id;
+              return (
+                <li
+                  key={m.id}
+                  className={`flex items-start gap-3 rounded-xl px-3 py-2.5 ${
+                    done
+                      ? 'bg-sparrow-green/5'
+                      : isNext
+                      ? 'bg-sparrow-gold/5'
+                      : 'opacity-50'
+                  }`}
+                >
+                  <span
+                    className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                      done
+                        ? 'bg-sparrow-green text-white'
+                        : isNext
+                        ? 'border-2 border-sparrow-gold text-sparrow-gold'
+                        : 'border-2 border-sparrow-rule text-sparrow-rule'
+                    }`}
+                  >
+                    {done ? '✓' : m.sort_order}
+                  </span>
+                  <div className="min-w-0">
+                    <p
+                      className={`text-sm font-medium ${
+                        done ? 'text-sparrow-gray line-through' : 'text-sparrow-ink'
+                      }`}
+                    >
+                      {m.title}
+                    </p>
+                    {!done && isNext && (
+                      <p className="mt-0.5 text-xs text-sparrow-gray">{m.description}</p>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+          <p className="text-xs text-sparrow-gray">
+            Your mentor checks these off with you during your one-on-one.
+          </p>
+        </section>
+      )}
 
       {phases.map((phase) => (
         <section key={phase.id} className="card">

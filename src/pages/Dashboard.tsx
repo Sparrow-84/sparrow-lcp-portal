@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/auth/AuthContext';
 import {
   getCurrentSession,
+  getGoalResponses,
+  getGoals,
   getHomework,
   getMessages,
   getRedemptions,
@@ -12,6 +14,8 @@ import {
 } from '@/lib/lcp';
 import type {
   CurrentSession,
+  Goal,
+  GoalResponse,
   Homework,
   LcpEvent,
   Message,
@@ -30,6 +34,7 @@ import { RewardsView } from '@/components/RewardsView';
 import { EventDetail, buildCantMakeitDraft } from '@/components/EventDetail';
 import { ItemDetail } from '@/components/ItemDetail';
 import { RoadmapView } from '@/components/RoadmapView';
+import { GoalsView } from '@/components/GoalsView';
 import { BottomNav, type Tab } from '@/components/BottomNav';
 import { SideNav } from '@/components/SideNav';
 import { GuidedTour, useGuidedTour } from '@/components/GuidedTour';
@@ -54,13 +59,15 @@ export function Dashboard() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [redemptions, setRedemptions] = useState<Redemption[]>([]);
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [goalResponses, setGoalResponses] = useState<GoalResponse[]>([]);
 
   const familyId = family?.id;
   const currentSessionNumber = family?.current_session_number ?? 1;
 
   const reload = useCallback(async () => {
     if (!familyId) return;
-    const [sess, hw, res, comps, ev, msg, vo, red] = await Promise.all([
+    const [sess, hw, res, comps, ev, msg, vo, red, gl, gr] = await Promise.all([
       getCurrentSession(currentSessionNumber),
       getHomework(familyId),
       getSessionResources(currentSessionNumber),
@@ -69,6 +76,8 @@ export function Dashboard() {
       getMessages(familyId),
       getVouchers(familyId),
       getRedemptions(familyId),
+      getGoals(familyId),
+      getGoalResponses(familyId),
     ]);
     setSession(sess);
     setHomework(hw);
@@ -78,6 +87,8 @@ export function Dashboard() {
     setMessages(msg);
     setVouchers(vo);
     setRedemptions(red);
+    setGoals(gl);
+    setGoalResponses(gr);
     setLoading(false);
   }, [familyId, currentSessionNumber]);
 
@@ -202,6 +213,18 @@ export function Dashboard() {
                   )}
                 </div>
 
+                {/* Pre-session encouragement card */}
+                {session?.unit?.encouragement_text && (
+                  <div className="rounded-xl border border-sparrow-green/30 bg-sparrow-green/5 p-4">
+                    <p className="mb-1 text-xs font-medium uppercase tracking-wide text-sparrow-green">
+                      A note before group
+                    </p>
+                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-sparrow-ink">
+                      {session.unit.encouragement_text}
+                    </p>
+                  </div>
+                )}
+
                 {/* This week's items */}
                 <WeekItems
                   items={weekItems}
@@ -238,10 +261,22 @@ export function Dashboard() {
                 <MissionFooter />
               </div>
             </div>
+          ) : tab === 'goals' ? (
+            <div className="flex-1 overflow-y-auto p-4 md:p-8">
+              <div className="mx-auto w-full max-w-3xl">
+                <GoalsView
+                  familyId={family.id}
+                  goals={goals}
+                  goalResponses={goalResponses}
+                  onChanged={() => void reload()}
+                />
+                <MissionFooter />
+              </div>
+            </div>
           ) : tab === 'roadmap' ? (
             <div className="flex-1 overflow-y-auto p-4 md:p-8">
               <div className="mx-auto w-full max-w-3xl">
-                <RoadmapView currentSession={currentSessionNumber} />
+                <RoadmapView currentSession={currentSessionNumber} familyId={family.id} />
                 <MissionFooter />
               </div>
             </div>

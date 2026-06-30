@@ -93,15 +93,26 @@ export function ItemDetail({
             <>
               {/* Content */}
               {content ? (
-                <div className="prose prose-sm max-w-none text-sparrow-ink">
-                  {content.split('\n').map((para, i) =>
-                    para.trim() ? (
-                      <p key={i} className="mb-3 text-sm leading-relaxed">
-                        {para}
-                      </p>
-                    ) : null,
-                  )}
-                </div>
+                content.trimStart().startsWith('<') ? (
+                  // HTML content (Stop/Rest/Reset devotionals, encouragement cards) — render in sandboxed iframe
+                  <iframe
+                    srcDoc={content}
+                    sandbox="allow-scripts"
+                    title={title}
+                    className="w-full rounded-lg"
+                    style={{ height: 'calc(100vh - 11rem)', border: 'none' }}
+                  />
+                ) : (
+                  <div className="prose prose-sm max-w-none text-sparrow-ink">
+                    {content.split('\n').map((para, i) =>
+                      para.trim() ? (
+                        <p key={i} className="mb-3 text-sm leading-relaxed">
+                          {para}
+                        </p>
+                      ) : null,
+                    )}
+                  </div>
+                )
               ) : item.kind === 'resource' && item.data.drive_url ? (
                 <a
                   href={item.data.drive_url}

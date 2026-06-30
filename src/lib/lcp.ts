@@ -2,6 +2,10 @@ import { supabase } from '@/lib/supabase';
 import type {
   CurrentSession,
   Family,
+  FamilyMilestoneProgress,
+  FinanceMilestone,
+  Goal,
+  GoalResponse,
   Homework,
   HomeworkStatus,
   LcpEvent,
@@ -26,7 +30,7 @@ export async function getMyFamily(): Promise<Family | null> {
 export async function getCurrentSession(sessionNumber: number): Promise<CurrentSession | null> {
   const { data } = await supabase
     .from('lcp_sessions')
-    .select('session_number, title, unit:lcp_units(name, phase:lcp_phases(number, name))')
+    .select('session_number, title, unit:lcp_units(name, encouragement_text, phase:lcp_phases(number, name))')
     .eq('session_number', sessionNumber)
     .maybeSingle();
   return (data as CurrentSession | null) ?? null;
@@ -193,4 +197,53 @@ export async function requestRedemption(familyId: string): Promise<void> {
   await supabase
     .from('lcp_redemptions')
     .insert({ family_id: familyId, vouchers_spent: 3, gift_card_value_cents: 2500, status: 'requested' });
+}
+
+// ── Goals (participant read + respond only) ───────────────────────────
+
+export async function getGoals(familyId: string): Promise<Goal[]> {
+  const { data } = await supabase
+    .from('lcp_goals')
+    .select('id, family_id, area, title, due_date, status, created_at, updated_at, met_at')
+    .eq('family_id', familyId)
+    .order('created_at', { ascending: true });
+  return (data as Goal[]) ?? [];
+}
+
+export async function getGoalResponses(familyId: string): Promise<GoalResponse[]> {
+  const { data } = await supabase
+    .from('lcp_goal_responses')
+    .select('id, goal_id, family_id, response, note, created_at')
+    .eq('family_id', familyId)
+    .order('created_at', { ascending: false });
+  return (data as GoalResponse[]) ?? [];
+}
+
+export async function submitGoalResponse(
+  goalId: string,
+  familyId: string,
+  response: 'met' | 'needs_time',
+  note?: string,
+): Promise<void> {
+  await supabase
+    .from('lcp_goal_responses')
+    .insert({ goal_id: goalId, family_id: familyId, response, note: note ?? null });
+}
+
+// ── Finance milestones (participant read only) ────────────────────────
+
+export async function getFinanceMilestones(): Promise<FinanceMilestone[]> {
+  const { data } = await supabase
+    .from('lcp_finance_milestones')
+    .select('id, sort_order, title, description')
+    .order('sort_order');
+  return (data as FinanceMilestone[]) ?? [];
+}
+
+export async function getMilestoneProgress(familyId: string): Promise<FamilyMilestoneProgress[]> {
+  const { data } = await supabase
+    .from('lcp_family_milestone_progress')
+    .select('id, family_id, milestone_id, completed_at')
+    .eq('family_id', familyId);
+  return (data as FamilyMilestoneProgress[]) ?? [];
 }
