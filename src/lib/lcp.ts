@@ -39,27 +39,15 @@ export async function getCurrentSession(sessionNumber: number): Promise<CurrentS
 export async function getHomework(familyId: string): Promise<Homework[]> {
   const { data } = await supabase
     .from('lcp_homework')
-    // NOTE: locked, sort_order added after migration 0040 — restore after Byron confirms
-    .select('id, family_id, session_id, area, title, description, due_date, status, submission_text, submitted_at')
+    .select('id, family_id, session_id, area, title, description, due_date, status, submission_text, submitted_at, locked, sort_order')
     .eq('family_id', familyId)
     .neq('status', 'complete')
     .order('sort_order', { ascending: true })
     .order('due_date', { ascending: true, nullsFirst: false });
-  return ((data ?? []) as Omit<Homework, 'locked' | 'sort_order'>[]).map((r) => ({
-    ...r,
-    locked: false,
-    sort_order: 0,
-  })) as Homework[];
+  return (data ?? []) as Homework[];
 }
 
 // ── Resources ─────────────────────────────────────────────────────────
-
-// NOTE: content, response_prompt, due_date, locked, sort_order added after migration 0040.
-// Restore the full select string after Byron confirms 0040.
-const RESOURCE_COLS =
-  'id, session_id, kind, audience, title, drive_url, created_at';
-// After 0040: replace with:
-// 'id, session_id, kind, audience, title, drive_url, created_at, content, response_prompt, due_date, locked, sort_order'
 
 export async function getSessionResources(sessionNumber: number): Promise<Resource[]> {
   // Two-step: resolve session_number → session.id, then fetch resources for that session.
@@ -72,14 +60,12 @@ export async function getSessionResources(sessionNumber: number): Promise<Resour
 
   const { data } = await supabase
     .from('lcp_resources')
-    .select(RESOURCE_COLS)
+    .select('id, session_id, kind, audience, title, drive_url, created_at, content, response_prompt, due_date, locked, sort_order')
     .eq('session_id', sess.id)
     .eq('audience', 'participant')
     .order('sort_order', { ascending: true });
 
-  return ((data ?? []) as Omit<Resource, 'content' | 'response_prompt' | 'due_date' | 'locked' | 'sort_order'>[]).map(
-    (r) => ({ ...r, content: null, response_prompt: null, due_date: null, locked: false, sort_order: 0 }),
-  ) as Resource[];
+  return (data ?? []) as Resource[];
 }
 
 export async function getResourceCompletions(familyId: string): Promise<ResourceCompletion[]> {
