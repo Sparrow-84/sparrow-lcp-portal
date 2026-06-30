@@ -24,7 +24,11 @@ export function Login() {
       if (error) setError('That email or password didn’t work. Want to create your password instead?');
       // success: AuthContext picks up the session automatically.
     } else {
-      const { data, error } = await supabase.auth.signUp({ email, password });
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { emailRedirectTo: window.location.origin },
+      });
       if (error) {
         // The DB trigger rejects emails that aren't on the LifeChange roster.
         setError(
