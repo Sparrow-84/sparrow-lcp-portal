@@ -93,7 +93,7 @@ export function WeekItems({
   return (
     <section className="card">
       <div className="flex items-baseline justify-between">
-        <h2 className="font-serif text-lg font-semibold">This Week</h2>
+        <h2 className="font-serif text-lg font-semibold">This Week's Work</h2>
         <span className="text-xs text-sparrow-gray">
           {done.length}/{items.length} done
         </span>
