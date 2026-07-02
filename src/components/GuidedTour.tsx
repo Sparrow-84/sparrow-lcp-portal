@@ -20,10 +20,10 @@ const STEPS = [
     tag: { icon: '💬', label: 'Messages' },
   },
   {
-    icon: '🎁',
-    title: 'Rewards',
-    body: "Every time you show up, you earn points. They add up to gift cards — a small thank-you for the hard work you're putting in.",
-    tag: { icon: '🎁', label: 'Rewards' },
+    icon: '✨',
+    title: 'Perks',
+    body: "Showing up earns you vouchers — a small thank-you from us. They add up to gift cards, and consistent months build toward housing support at graduation.",
+    tag: { icon: '✨', label: 'Perks' },
   },
   {
     icon: '🗺️',

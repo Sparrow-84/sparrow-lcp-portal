@@ -58,7 +58,7 @@ export function RewardsView({
         </button>
         {pending > 0 && (
           <p className="mt-2 text-xs text-sparrow-green">
-            {pending} redemption{pending > 1 ? 's' : ''} requested — Shelly will hand you the gift card soon. 🎁
+            {pending} redemption{pending > 1 ? 's' : ''} requested — Shelly will hand you the gift card soon. ✨
           </p>
         )}
       </section>

@@ -4,8 +4,8 @@ export const TABS: { key: Tab; label: string; icon: string }[] = [
   { key: 'home', label: 'Home', icon: '🏠' },
   { key: 'goals', label: 'Goals', icon: '⭐' },
   { key: 'messages', label: 'Messages', icon: '💬' },
-  { key: 'rewards', label: 'Rewards', icon: '🎁' },
   { key: 'roadmap', label: 'Journey', icon: '🗺️' },
+  { key: 'rewards', label: 'Perks', icon: '✨' },
 ];
 
 export function BottomNav({
