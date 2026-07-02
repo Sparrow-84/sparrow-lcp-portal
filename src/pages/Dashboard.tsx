@@ -136,7 +136,7 @@ export function Dashboard() {
   if (detail?.type === 'event') {
     return (
       <div className="min-h-screen bg-white md:flex">
-        <SideNav tab={tab} onChange={setTab} onSignOut={signOut} unread={unread} />
+        <SideNav tab={tab} onChange={setTab} onSignOut={signOut} onReopenTour={reopenTour} unread={unread} />
         <div className="mx-auto w-full max-w-phone md:max-w-2xl">
           <EventDetail
             event={detail.event}
@@ -154,7 +154,7 @@ export function Dashboard() {
     if (item) {
       return (
         <div className="min-h-screen bg-white md:flex">
-          <SideNav tab={tab} onChange={setTab} onSignOut={signOut} unread={unread} />
+          <SideNav tab={tab} onChange={setTab} onSignOut={signOut} onReopenTour={reopenTour} unread={unread} />
           <div className="mx-auto flex w-full max-w-phone flex-col md:max-w-2xl">
             <ItemDetail
               item={item}
@@ -176,7 +176,7 @@ export function Dashboard() {
     <div className="min-h-screen bg-sparrow-mist md:flex">
       {tourOpen && <GuidedTour onDismiss={dismissTour} />}
 
-      <SideNav tab={tab} onChange={setTab} onSignOut={signOut} unread={unread} />
+      <SideNav tab={tab} onChange={setTab} onSignOut={signOut} onReopenTour={reopenTour} unread={unread} />
 
       <div className="mx-auto flex min-h-screen w-full max-w-phone flex-col md:mx-0 md:max-w-none md:flex-1">
         {/* Mobile header */}

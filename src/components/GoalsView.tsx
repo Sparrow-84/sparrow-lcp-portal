@@ -103,7 +103,7 @@ export function GoalsView({
                   <p className="rounded-lg bg-sparrow-mist px-3 py-2 text-xs text-sparrow-gray">
                     {latest.response === 'met'
                       ? '✓ You let your mentor know you did this. Nice work.'
-                      : '⚑ You let your mentor know you need more time. They'll follow up.'}
+                      : "⚑ You let your mentor know you need more time. They'll follow up."}
                   </p>
                 )}
 

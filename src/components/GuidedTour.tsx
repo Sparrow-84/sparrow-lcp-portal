@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 const STEPS = [
   {
-    icon: '👋',
+    icon: 'logo' as const,
     title: 'Welcome to your portal',
     body: "This is your LifeChange home base. Everything you need for the week — readings, worksheets, meetings, and more — is right here. Let's take a quick look around.",
     tag: null,
@@ -83,7 +83,11 @@ export function GuidedTour({ onDismiss }: { onDismiss: () => void }) {
         </button>
 
         {/* Icon */}
-        <div className="mb-3 text-4xl">{current.icon}</div>
+        {current.icon === 'logo' ? (
+          <img src="/logo-primary-circle-green.png" alt="Sparrow" className="mb-3 h-14 w-14" />
+        ) : (
+          <div className="mb-3 text-4xl">{current.icon}</div>
+        )}
 
         {/* Title */}
         <h2 className="font-serif text-xl font-semibold text-sparrow-green">
