@@ -59,5 +59,5 @@ export function EventDetail({
 
 export function buildCantMakeitDraft(event: LcpEvent): string {
   const day = shortDayLabel(event.starts_at);
-  return `Hi — I won't be able to make ${event.title} on ${day}. `;
+  return `Hi — I won't be able to make ${event.title} on ${day}. Here's why: `;
 }
