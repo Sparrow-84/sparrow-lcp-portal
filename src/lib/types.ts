@@ -105,6 +105,20 @@ export interface Message {
   body: string;
   created_at: string;
   read_at: string | null;
+  // Added by migration 0053 — null-safe until Byron runs it
+  voice_url: string | null;
+  voice_duration: number | null;
+  image_url: string | null;
+  // Added by migration 0054 — null-safe until Byron runs it
+  reply_to_id: string | null;
+  edited_at: string | null;
+}
+
+export interface MessageReaction {
+  id: string;
+  message_id: string;
+  user_id: string;
+  emoji: string;
 }
 
 export interface Voucher {

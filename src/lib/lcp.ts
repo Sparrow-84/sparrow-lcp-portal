@@ -10,6 +10,7 @@ import type {
   HomeworkStatus,
   LcpEvent,
   Message,
+  MessageReaction,
   Redemption,
   Resource,
   ResourceCompletion,
@@ -156,8 +157,43 @@ export async function getMessages(familyId: string): Promise<Message[]> {
   return (data as Message[]) ?? [];
 }
 
-export async function sendMessage(familyId: string, body: string): Promise<void> {
-  await supabase.from('lcp_messages').insert({ family_id: familyId, sender_kind: 'family', body });
+export async function sendMessage(
+  familyId: string,
+  body: string,
+  voice?: { url: string; duration: number },
+  imageUrl?: string,
+  replyToId?: string,
+): Promise<void> {
+  await supabase.from('lcp_messages').insert({
+    family_id: familyId,
+    sender_kind: 'family',
+    body,
+    ...(voice ? { voice_url: voice.url, voice_duration: voice.duration } : {}),
+    ...(imageUrl ? { image_url: imageUrl } : {}),
+    ...(replyToId ? { reply_to_id: replyToId } : {}),
+  });
+}
+
+export async function uploadLcpVoice(blob: Blob, familyId: string): Promise<{ url: string }> {
+  const ext = blob.type.includes('mp4') || blob.type.includes('aac') ? 'm4a' : 'webm';
+  const path = `${familyId}/${Date.now()}.${ext}`;
+  const { error } = await supabase.storage
+    .from('lcp-voice-messages')
+    .upload(path, blob, { contentType: blob.type || 'audio/webm' });
+  if (error) throw new Error(error.message);
+  const { data } = supabase.storage.from('lcp-voice-messages').getPublicUrl(path);
+  return { url: data.publicUrl };
+}
+
+export async function uploadLcpImage(file: File, familyId: string): Promise<{ url: string }> {
+  const ext = file.name.split('.').pop()?.toLowerCase() ?? 'jpg';
+  const path = `${familyId}/${Date.now()}.${ext}`;
+  const { error } = await supabase.storage
+    .from('lcp-images')
+    .upload(path, file, { contentType: file.type || 'image/jpeg' });
+  if (error) throw new Error(error.message);
+  const { data } = supabase.storage.from('lcp-images').getPublicUrl(path);
+  return { url: data.publicUrl };
 }
 
 export async function getVouchers(familyId: string): Promise<Voucher[]> {
@@ -232,4 +268,43 @@ export async function getMilestoneProgress(familyId: string): Promise<FamilyMile
     .select('id, family_id, milestone_id, completed_at')
     .eq('family_id', familyId);
   return (data as FamilyMilestoneProgress[]) ?? [];
+}
+
+// ── Message actions (migration 0054) ─────────────────────────────────
+
+export async function deleteLcpMessage(messageId: string): Promise<void> {
+  await supabase.from('lcp_messages').delete().eq('id', messageId);
+}
+
+export async function editLcpMessage(messageId: string, newBody: string): Promise<void> {
+  await supabase
+    .from('lcp_messages')
+    .update({ body: newBody, edited_at: new Date().toISOString() })
+    .eq('id', messageId);
+}
+
+export async function fetchLcpReactions(familyId: string): Promise<MessageReaction[]> {
+  const { data, error } = await supabase
+    .from('lcp_message_reactions')
+    .select('id, message_id, user_id, emoji')
+    .eq('family_id', familyId);
+  if (error) return []; // table doesn't exist until 0054
+  return (data ?? []) as MessageReaction[];
+}
+
+export async function addLcpReaction(familyId: string, messageId: string, emoji: string): Promise<void> {
+  await supabase
+    .from('lcp_message_reactions')
+    .upsert({ family_id: familyId, message_id: messageId, emoji }, { onConflict: 'message_id,user_id,emoji' });
+}
+
+export async function removeLcpReaction(messageId: string, emoji: string): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  await supabase
+    .from('lcp_message_reactions')
+    .delete()
+    .eq('message_id', messageId)
+    .eq('user_id', user.id)
+    .eq('emoji', emoji);
 }

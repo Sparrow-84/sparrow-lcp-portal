@@ -44,7 +44,7 @@ type DetailView =
   | { type: 'item'; index: number };
 
 export function Dashboard() {
-  const { family, signOut, refreshFamily } = useAuth();
+  const { family, session: authSession, signOut, refreshFamily } = useAuth();
   const { tourOpen, dismissTour, reopenTour } = useGuidedTour();
   const [tab, setTab] = useState<Tab>('home');
   const [detail, setDetail] = useState<DetailView | null>(null);
@@ -244,6 +244,7 @@ export function Dashboard() {
             <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col overflow-hidden">
               <MessagesView
                 familyId={family.id}
+                meUserId={authSession?.user?.id ?? ''}
                 messages={messages}
                 initialDraft={messageDraft}
                 onChange={() => { void reload(); setMessageDraft(''); }}

@@ -1,31 +1,178 @@
-import { useState, type FormEvent } from 'react';
-import type { Message } from '@/lib/types';
-import { sendMessage } from '@/lib/lcp';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import type { Message, MessageReaction } from '@/lib/types';
+import {
+  addLcpReaction, deleteLcpMessage, editLcpMessage, fetchLcpReactions,
+  removeLcpReaction, sendMessage, uploadLcpImage, uploadLcpVoice,
+} from '@/lib/lcp';
 import { timeLabel, dayLabel } from '@/lib/format';
+import { VoiceRecorder } from '@/components/chat/VoiceRecorder';
+import { VoiceMessagePlayer } from '@/components/chat/VoiceMessagePlayer';
+import { ImagePicker } from '@/components/chat/ImagePicker';
+
+// ── Constants ─────────────────────────────────────────────────────────────────
+
+const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🙏', '🎉', '🙌'];
+const MAX_TEXTAREA_HEIGHT = 128; // max-h-32
+
+// ── Markdown + body rendering ─────────────────────────────────────────────────
+
+function renderBody(body: string): ReactNode {
+  const re = /\*\*((?:[^*]|\*(?!\*))+)\*\*|\*([^*\n]+)\*/g;
+  const nodes: ReactNode[] = [];
+  let last = 0;
+  let key = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(body)) !== null) {
+    if (m.index > last) nodes.push(body.slice(last, m.index));
+    if (m[1] !== undefined) nodes.push(<strong key={key++}>{m[1]}</strong>);
+    else if (m[2] !== undefined) nodes.push(<em key={key++}>{m[2]}</em>);
+    last = m.index + m[0].length;
+  }
+  if (last < body.length) nodes.push(body.slice(last));
+  return nodes.length ? <>{nodes}</> : body;
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
 
 export function MessagesView({
   familyId,
-  messages,
+  meUserId,
+  messages: initialMessages,
   onChange,
   initialDraft = '',
 }: {
   familyId: string;
+  meUserId: string;
   messages: Message[];
   onChange: () => void;
   initialDraft?: string;
 }) {
+  const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [draft, setDraft] = useState(initialDraft);
   const [busy, setBusy] = useState(false);
+  const [recording, setRecording] = useState(false);
+  const [pickingImage, setPickingImage] = useState(false);
+  // Reply / quote
+  const [replyTo, setReplyTo] = useState<Message | null>(null);
+  // Edit
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState('');
+  // Reactions
+  const [reactions, setReactions] = useState<MessageReaction[]>([]);
+  const [emojiPickerId, setEmojiPickerId] = useState<string | null>(null);
 
-  async function send(e: FormEvent) {
-    e.preventDefault();
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const endRef = useRef<HTMLDivElement>(null);
+
+  // Keep local messages in sync when parent refreshes
+  useEffect(() => { setMessages(initialMessages); }, [initialMessages]);
+
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ block: 'end' });
+  }, [messages.length]);
+
+  useEffect(() => {
+    void fetchLcpReactions(familyId).then(setReactions);
+  }, [familyId, messages.length]);
+
+  useEffect(() => {
+    if (!emojiPickerId) return;
+    function handleClick() { setEmojiPickerId(null); }
+    document.addEventListener('click', handleClick);
+    return () => document.removeEventListener('click', handleClick);
+  }, [emojiPickerId]);
+
+  // Auto-resize textarea
+  function autoResize(el: HTMLTextAreaElement) {
+    el.style.height = 'auto';
+    const capped = Math.min(el.scrollHeight, MAX_TEXTAREA_HEIGHT);
+    el.style.height = `${capped}px`;
+    el.style.overflowY = el.scrollHeight > MAX_TEXTAREA_HEIGHT ? 'auto' : 'hidden';
+  }
+
+  useEffect(() => {
+    const ta = textareaRef.current;
+    if (!ta || draft) return;
+    ta.style.height = 'auto';
+    ta.style.overflowY = 'hidden';
+  }, [draft]);
+
+  async function send() {
     const body = draft.trim();
-    if (!body) return;
+    if (!body || busy) return;
     setBusy(true);
-    await sendMessage(familyId, body);
-    setDraft('');
-    setBusy(false);
+    try {
+      const msg: Message = {
+        id: crypto.randomUUID(),
+        family_id: familyId,
+        sender_kind: 'family',
+        sender_id: meUserId,
+        body,
+        created_at: new Date().toISOString(),
+        read_at: null,
+        voice_url: null,
+        voice_duration: null,
+        image_url: null,
+        reply_to_id: replyTo?.id ?? null,
+        edited_at: null,
+      };
+      setMessages((prev) => [...prev, msg]);
+      await sendMessage(familyId, body, undefined, undefined, replyTo?.id ?? undefined);
+      setDraft('');
+      setReplyTo(null);
+      onChange();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleSendVoice(blob: Blob, duration: number) {
+    const { url } = await uploadLcpVoice(blob, familyId);
+    await sendMessage(familyId, '', { url, duration });
     onChange();
+  }
+
+  async function handleSendImage(file: File) {
+    const { url } = await uploadLcpImage(file, familyId);
+    await sendMessage(familyId, '', undefined, url);
+    onChange();
+  }
+
+  async function handleDelete(msgId: string) {
+    setMessages((prev) => prev.filter((m) => m.id !== msgId));
+    await deleteLcpMessage(msgId);
+    onChange();
+  }
+
+  async function saveEdit(msgId: string) {
+    const body = editDraft.trim();
+    if (!body) return;
+    setMessages((prev) => prev.map((m) => m.id === msgId ? { ...m, body, edited_at: new Date().toISOString() } : m));
+    await editLcpMessage(msgId, body);
+    setEditingId(null);
+    onChange();
+  }
+
+  async function toggleReaction(msgId: string, emoji: string) {
+    const already = reactions.some((r) => r.message_id === msgId && r.user_id === meUserId && r.emoji === emoji);
+    if (already) {
+      await removeLcpReaction(msgId, emoji);
+      setReactions((prev) => prev.filter((r) => !(r.message_id === msgId && r.user_id === meUserId && r.emoji === emoji)));
+    } else {
+      await addLcpReaction(familyId, msgId, emoji);
+      setReactions((prev) => [...prev, { id: crypto.randomUUID(), message_id: msgId, user_id: meUserId, emoji }]);
+    }
+    setEmojiPickerId(null);
+  }
+
+  function reactionsFor(msgId: string): { emoji: string; count: number; iMine: boolean }[] {
+    const byEmoji = new Map<string, { count: number; iMine: boolean }>();
+    for (const r of reactions) {
+      if (r.message_id !== msgId) continue;
+      const cur = byEmoji.get(r.emoji) ?? { count: 0, iMine: false };
+      byEmoji.set(r.emoji, { count: cur.count + 1, iMine: cur.iMine || r.user_id === meUserId });
+    }
+    return Array.from(byEmoji.entries()).map(([emoji, v]) => ({ emoji, ...v }));
   }
 
   return (
@@ -35,44 +182,300 @@ export function MessagesView({
         <p className="text-xs text-sparrow-gray">Your LifeChange team is on the other side.</p>
       </div>
 
+      {/* Message list */}
       <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
         {messages.length === 0 ? (
           <p className="text-center text-sm text-sparrow-gray">No messages yet. Say hello! 👋</p>
         ) : (
           messages.map((m) => {
             const mine = m.sender_kind === 'family';
+            const isEditing = editingId === m.id;
+            const msgReactions = reactionsFor(m.id);
+            const quotedMsg = m.reply_to_id
+              ? messages.find((x) => x.id === m.reply_to_id) ?? null
+              : null;
+
             return (
-              <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
-                <div
-                  className={`max-w-[80%] rounded-2xl px-3.5 py-2 text-sm ${
-                    mine
-                      ? 'rounded-br-sm bg-sparrow-green text-white'
-                      : 'rounded-bl-sm bg-white text-sparrow-ink shadow-card'
-                  }`}
-                >
-                  <p>{m.body}</p>
-                  <p className={`mt-1 text-[10px] ${mine ? 'text-white/70' : 'text-sparrow-gray'}`}>
-                    {dayLabel(m.created_at)} · {timeLabel(m.created_at)}
-                  </p>
+              <div key={m.id} className="group">
+                <div className={`flex items-end gap-1.5 ${mine ? 'justify-end' : 'justify-start'}`}>
+
+                  {/* Actions — left for received */}
+                  {!mine && (
+                    <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+                      <MsgActionBtn title="React" onClick={(e) => { e.stopPropagation(); setEmojiPickerId(m.id); }}>
+                        <EmojiIcon />
+                      </MsgActionBtn>
+                      <MsgActionBtn title="Reply" onClick={() => setReplyTo(m)}>
+                        <ReplyIcon />
+                      </MsgActionBtn>
+                    </div>
+                  )}
+
+                  <div className="max-w-[82%]">
+                    {isEditing ? (
+                      <div className="rounded-2xl border border-sparrow-rule bg-white px-3 py-2">
+                        <textarea
+                          value={editDraft}
+                          onChange={(e) => setEditDraft(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); void saveEdit(m.id); }
+                            if (e.key === 'Escape') setEditingId(null);
+                          }}
+                          autoFocus
+                          rows={2}
+                          spellCheck
+                          className="w-full resize-none text-sm text-sparrow-ink focus:outline-none"
+                        />
+                        <div className="mt-1.5 flex justify-end gap-2">
+                          <button onClick={() => setEditingId(null)} className="text-xs text-sparrow-gray hover:text-sparrow-ink">Cancel</button>
+                          <button onClick={() => void saveEdit(m.id)} className="text-xs font-medium text-sparrow-green hover:underline">Save</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div
+                        className={`rounded-2xl px-3.5 py-2 text-sm ${
+                          mine
+                            ? 'rounded-br-sm bg-sparrow-green text-white'
+                            : 'rounded-bl-sm bg-white text-sparrow-ink shadow-card'
+                        }`}
+                      >
+                        {/* Quote preview */}
+                        {quotedMsg && (
+                          <div className={`mb-2 rounded-lg border-l-2 pl-2 pr-2 py-1 text-xs ${mine ? 'border-white/40 bg-white/10 text-white/80' : 'border-sparrow-green/40 bg-sparrow-mist text-sparrow-gray'}`}>
+                            <p className="font-medium">{quotedMsg.sender_kind === 'family' ? 'You' : 'Your team'}</p>
+                            <p className="truncate">{quotedMsg.body || (quotedMsg.voice_url ? '🎤 Voice message' : quotedMsg.image_url ? '🖼 Photo' : '')}</p>
+                          </div>
+                        )}
+
+                        {/* Content */}
+                        {m.image_url ? (
+                          <img src={m.image_url} alt="" loading="lazy" className="max-h-64 w-auto max-w-full rounded-lg" />
+                        ) : m.voice_url ? (
+                          <VoiceMessagePlayer url={m.voice_url} duration={m.voice_duration ?? 0} mine={mine} />
+                        ) : (
+                          <p className="whitespace-pre-wrap break-words">{renderBody(m.body)}</p>
+                        )}
+
+                        <p className={`mt-1 text-[10px] ${mine ? 'text-white/70' : 'text-sparrow-gray'}`}>
+                          {dayLabel(m.created_at)} · {timeLabel(m.created_at)}
+                          {m.edited_at && <span className="ml-1">(edited)</span>}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Reaction pills */}
+                    {msgReactions.length > 0 && (
+                      <div className={`mt-1 flex flex-wrap gap-1 ${mine ? 'justify-end' : 'justify-start'}`}>
+                        {msgReactions.map(({ emoji, count, iMine }) => (
+                          <button
+                            key={emoji}
+                            onClick={() => void toggleReaction(m.id, emoji)}
+                            className={`flex items-center gap-0.5 rounded-full border px-1.5 py-0.5 text-xs transition ${
+                              iMine
+                                ? 'border-sparrow-green bg-sparrow-green/10 text-sparrow-green'
+                                : 'border-sparrow-rule bg-white text-sparrow-ink hover:border-sparrow-green/40'
+                            }`}
+                          >
+                            {emoji} {count}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Actions — right for sent */}
+                  {mine && (
+                    <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+                      <MsgActionBtn title="React" onClick={(e) => { e.stopPropagation(); setEmojiPickerId(m.id); }}>
+                        <EmojiIcon />
+                      </MsgActionBtn>
+                      <MsgActionBtn title="Reply" onClick={() => setReplyTo(m)}>
+                        <ReplyIcon />
+                      </MsgActionBtn>
+                      {!m.voice_url && !m.image_url && (
+                        <MsgActionBtn title="Edit" onClick={() => { setEditingId(m.id); setEditDraft(m.body); }}>
+                          <EditIcon />
+                        </MsgActionBtn>
+                      )}
+                      <MsgActionBtn title="Delete" onClick={() => void handleDelete(m.id)} danger>
+                        <TrashIcon />
+                      </MsgActionBtn>
+                    </div>
+                  )}
                 </div>
+
+                {/* Emoji picker */}
+                {emojiPickerId === m.id && (
+                  <div
+                    className={`mt-1 flex items-center gap-1 rounded-xl border border-sparrow-rule bg-white p-1.5 shadow-md ${mine ? 'justify-end' : 'justify-start'}`}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {REACTION_EMOJIS.map((emoji) => (
+                      <button
+                        key={emoji}
+                        onClick={() => void toggleReaction(m.id, emoji)}
+                        className="rounded-lg p-1.5 text-lg leading-none hover:bg-sparrow-mist transition"
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             );
           })
         )}
+        <div ref={endRef} />
       </div>
 
-      <form onSubmit={send} className="flex items-end gap-2 border-t border-sparrow-rule bg-white p-3">
-        <textarea
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          placeholder="Write a message…"
-          rows={1}
-          className="field-input mt-0 max-h-32 flex-1 resize-none"
+      {/* Input area */}
+      {recording ? (
+        <VoiceRecorder onClose={() => setRecording(false)} onSend={handleSendVoice} />
+      ) : pickingImage ? (
+        <ImagePicker
+          onClose={() => setPickingImage(false)}
+          onSend={handleSendImage}
         />
-        <button type="submit" disabled={busy || !draft.trim()} className="btn-primary">
-          Send
-        </button>
-      </form>
+      ) : (
+        <div className="border-t border-sparrow-rule bg-white">
+          {/* Reply bar */}
+          {replyTo && (
+            <div className="flex items-center gap-2 border-b border-sparrow-rule bg-sparrow-mist px-4 py-2">
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] font-medium text-sparrow-gray">
+                  Replying to {replyTo.sender_kind === 'family' ? 'yourself' : 'your team'}
+                </p>
+                <p className="truncate text-xs text-sparrow-ink">
+                  {replyTo.body || (replyTo.voice_url ? '🎤 Voice message' : replyTo.image_url ? '🖼 Photo' : '')}
+                </p>
+              </div>
+              <button
+                onClick={() => setReplyTo(null)}
+                aria-label="Cancel reply"
+                className="shrink-0 text-sparrow-gray hover:text-sparrow-ink"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+          )}
+
+          <div className="flex items-end gap-2 p-3">
+            <textarea
+              ref={textareaRef}
+              value={draft}
+              onChange={(e) => { autoResize(e.target); setDraft(e.target.value); }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); void send(); }
+              }}
+              placeholder="Write a message…"
+              rows={1}
+              disabled={busy}
+              spellCheck
+              autoCorrect="on"
+              autoCapitalize="sentences"
+              className="field-input mt-0 max-h-32 flex-1 resize-none"
+              style={{ overflowY: 'hidden' }}
+            />
+            <button
+              onClick={() => setPickingImage(true)}
+              disabled={busy}
+              aria-label="Send a photo"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sparrow-gray hover:bg-sparrow-mist hover:text-sparrow-green disabled:opacity-40"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                <circle cx="12" cy="13" r="4" />
+              </svg>
+            </button>
+            <button
+              onClick={() => setRecording(true)}
+              disabled={busy}
+              aria-label="Send a voice message"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sparrow-gray hover:bg-sparrow-mist hover:text-sparrow-green disabled:opacity-40"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                <line x1="12" y1="19" x2="12" y2="23" />
+                <line x1="8" y1="23" x2="16" y2="23" />
+              </svg>
+            </button>
+            <button onClick={() => void send()} disabled={busy || !draft.trim()} className="btn-primary">
+              Send
+            </button>
+          </div>
+        </div>
+      )}
     </section>
+  );
+}
+
+// ── Small reusable action button ──────────────────────────────────────────────
+
+function MsgActionBtn({
+  title,
+  onClick,
+  danger = false,
+  children,
+}: {
+  title: string;
+  onClick: (e: React.MouseEvent) => void;
+  danger?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      title={title}
+      onClick={onClick}
+      className={`flex h-7 w-7 items-center justify-center rounded-full transition ${
+        danger
+          ? 'text-sparrow-gray hover:bg-red-50 hover:text-red-500'
+          : 'text-sparrow-gray hover:bg-sparrow-mist hover:text-sparrow-ink'
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function EmojiIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <circle cx="12" cy="12" r="10" />
+      <path d="M8 13s1.5 2 4 2 4-2 4-2" />
+      <line x1="9" y1="9" x2="9.01" y2="9" />
+      <line x1="15" y1="9" x2="15.01" y2="9" />
+    </svg>
+  );
+}
+
+function ReplyIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <polyline points="9,17 4,12 9,7" />
+      <path d="M20 18v-2a4 4 0 0 0-4-4H4" />
+    </svg>
+  );
+}
+
+function EditIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+    </svg>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <polyline points="3,6 5,6 21,6" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <path d="M10 11v6" /><path d="M14 11v6" />
+      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+    </svg>
   );
 }
