@@ -159,7 +159,7 @@ export function MessagesView({
       await removeLcpReaction(msgId, emoji);
       setReactions((prev) => prev.filter((r) => !(r.message_id === msgId && r.user_id === meUserId && r.emoji === emoji)));
     } else {
-      await addLcpReaction(familyId, msgId, emoji);
+      await addLcpReaction(familyId, msgId, emoji, meUserId);
       setReactions((prev) => [...prev, { id: crypto.randomUUID(), message_id: msgId, user_id: meUserId, emoji }]);
     }
     setEmojiPickerId(null);

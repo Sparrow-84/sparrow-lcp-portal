@@ -292,10 +292,10 @@ export async function fetchLcpReactions(familyId: string): Promise<MessageReacti
   return (data ?? []) as MessageReaction[];
 }
 
-export async function addLcpReaction(familyId: string, messageId: string, emoji: string): Promise<void> {
+export async function addLcpReaction(familyId: string, messageId: string, emoji: string, userId: string): Promise<void> {
   await supabase
     .from('lcp_message_reactions')
-    .upsert({ family_id: familyId, message_id: messageId, emoji }, { onConflict: 'message_id,user_id,emoji' });
+    .upsert({ family_id: familyId, message_id: messageId, emoji, user_id: userId }, { onConflict: 'message_id,user_id,emoji' });
 }
 
 export async function removeLcpReaction(messageId: string, emoji: string): Promise<void> {
