@@ -1,6 +1,10 @@
+import { useEffect } from 'react';
 import { useAuth } from '@/auth/AuthContext';
 import { Login } from '@/pages/Login';
 import { Dashboard } from '@/pages/Dashboard';
+import { initOneSignal, loginOneSignal, logoutOneSignal } from '@/lib/push';
+
+initOneSignal();
 
 function Splash({ message }: { message: string }) {
   return (
@@ -12,6 +16,14 @@ function Splash({ message }: { message: string }) {
 
 export function App() {
   const { session, family, loading, signOut } = useAuth();
+
+  useEffect(() => {
+    if (family?.id) loginOneSignal(family.id);
+  }, [family?.id]);
+
+  useEffect(() => {
+    if (!session) logoutOneSignal();
+  }, [session]);
 
   if (loading) return <Splash message="Loading…" />;
   if (!session) return <Login />;
