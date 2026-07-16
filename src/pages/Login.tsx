@@ -19,13 +19,17 @@ export function Login() {
     setError(null);
     setNotice(null);
 
+    // Trim + lowercase so a stray space or different casing (easy to introduce via
+    // copy-paste) doesn't fail to match the roster email staff added on their side.
+    const normalizedEmail = email.trim().toLowerCase();
+
     if (mode === 'sign-in') {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
       if (error) setError('That email or password didn’t work. Want to create your password instead?');
       // success: AuthContext picks up the session automatically.
     } else {
       const { data, error } = await supabase.auth.signUp({
-        email,
+        email: normalizedEmail,
         password,
         options: { emailRedirectTo: window.location.origin },
       });
