@@ -241,7 +241,7 @@ export function Dashboard() {
               </div>
             </div>
           ) : tab === 'messages' ? (
-            <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col overflow-hidden">
+            <div className="mx-auto flex w-full min-w-0 max-w-3xl flex-1 flex-col overflow-hidden">
               <MessagesView
                 familyId={family.id}
                 meUserId={authSession?.user?.id ?? ''}

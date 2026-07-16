@@ -176,7 +176,7 @@ export function MessagesView({
   }
 
   return (
-    <section className="flex h-full flex-col">
+    <section className="flex h-full min-w-0 flex-col">
       <div className="border-b border-sparrow-rule px-4 py-3">
         <h2 className="font-serif text-lg font-semibold">Messages</h2>
         <p className="text-xs text-sparrow-gray">Your LifeChange team is on the other side.</p>
