@@ -7,6 +7,8 @@ interface AuthState {
   session: Session | null;
   family: Family | null;
   loading: boolean;
+  passwordRecovery: boolean;
+  clearPasswordRecovery: () => void;
   signOut: () => Promise<void>;
   refreshFamily: () => Promise<void>;
 }
@@ -15,6 +17,8 @@ const AuthContext = createContext<AuthState>({
   session: null,
   family: null,
   loading: true,
+  passwordRecovery: false,
+  clearPasswordRecovery: () => {},
   signOut: async () => {},
   refreshFamily: async () => {},
 });
@@ -23,6 +27,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [family, setFamily] = useState<Family | null>(null);
   const [loading, setLoading] = useState(true);
+  // Set when the user arrives via a "reset your password" email link — the
+  // session is technically valid at that point, but the intent is for them to
+  // set a new password, not land straight in the dashboard.
+  const [passwordRecovery, setPasswordRecovery] = useState(false);
 
   // Track the Supabase session (persists across reloads — no repeated login codes).
   useEffect(() => {
@@ -31,7 +39,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => setSession(s));
+    const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
+      if (event === 'PASSWORD_RECOVERY') setPasswordRecovery(true);
+      setSession(s);
+    });
     return () => sub.subscription.unsubscribe();
   }, []);
 
@@ -71,10 +82,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function signOut() {
     await supabase.auth.signOut();
     setFamily(null);
+    setPasswordRecovery(false);
+  }
+
+  function clearPasswordRecovery() {
+    setPasswordRecovery(false);
   }
 
   return (
-    <AuthContext.Provider value={{ session, family, loading, signOut, refreshFamily }}>
+    <AuthContext.Provider
+      value={{ session, family, loading, passwordRecovery, clearPasswordRecovery, signOut, refreshFamily }}
+    >
       {children}
     </AuthContext.Provider>
   );

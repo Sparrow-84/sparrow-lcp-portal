@@ -3,7 +3,7 @@ import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import { Wordmark } from '@/components/Wordmark';
 import { MissionFooter } from '@/components/MissionFooter';
 
-type Mode = 'sign-in' | 'sign-up';
+type Mode = 'sign-in' | 'sign-up' | 'reset-request';
 
 export function Login() {
   const [mode, setMode] = useState<Mode>('sign-in');
@@ -23,7 +23,13 @@ export function Login() {
     // copy-paste) doesn't fail to match the roster email staff added on their side.
     const normalizedEmail = email.trim().toLowerCase();
 
-    if (mode === 'sign-in') {
+    if (mode === 'reset-request') {
+      const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
+        redirectTo: window.location.origin,
+      });
+      // Don't reveal whether the email is on file — same message either way.
+      setNotice(error ? error.message : 'If that email has an account, a reset link is on its way.');
+    } else if (mode === 'sign-in') {
       const { error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
       if (error) setError('That email or password didn’t work. Want to create your password instead?');
       // success: AuthContext picks up the session automatically.
@@ -72,43 +78,73 @@ export function Login() {
                 className="field-input"
               />
             </div>
-            <div>
-              <label className="field-label" htmlFor="password">
-                Password
-              </label>
-              <input
-                id="password"
-                type="password"
-                autoComplete={mode === 'sign-in' ? 'current-password' : 'new-password'}
-                required
-                minLength={8}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="field-input"
-              />
-            </div>
+            {mode !== 'reset-request' && (
+              <div>
+                <label className="field-label" htmlFor="password">
+                  Password
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  autoComplete={mode === 'sign-in' ? 'current-password' : 'new-password'}
+                  required
+                  minLength={8}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="field-input"
+                />
+              </div>
+            )}
+
+            {mode === 'sign-in' && (
+              <button
+                type="button"
+                onClick={() => { setMode('reset-request'); setError(null); setNotice(null); }}
+                className="text-xs font-medium text-sparrow-green underline"
+              >
+                Forgot your password?
+              </button>
+            )}
 
             {error && <p className="text-sm text-red-600">{error}</p>}
             {notice && <p className="text-sm text-sparrow-green">{notice}</p>}
 
             <button type="submit" disabled={busy} className="btn-primary w-full">
-              {busy ? 'One moment…' : mode === 'sign-in' ? 'Sign in' : 'Create my account'}
+              {busy
+                ? 'One moment…'
+                : mode === 'sign-in'
+                  ? 'Sign in'
+                  : mode === 'reset-request'
+                    ? 'Send reset link'
+                    : 'Create my account'}
             </button>
 
-            <p className="text-center text-sm text-sparrow-gray">
-              {mode === 'sign-in' ? 'First time here?' : 'Already have a password?'}{' '}
-              <button
-                type="button"
-                onClick={() => {
-                  setMode(mode === 'sign-in' ? 'sign-up' : 'sign-in');
-                  setError(null);
-                  setNotice(null);
-                }}
-                className="font-medium text-sparrow-green underline"
-              >
-                {mode === 'sign-in' ? 'Create your password' : 'Sign in'}
-              </button>
-            </p>
+            {mode === 'reset-request' ? (
+              <p className="text-center text-sm text-sparrow-gray">
+                <button
+                  type="button"
+                  onClick={() => { setMode('sign-in'); setError(null); setNotice(null); }}
+                  className="font-medium text-sparrow-green underline"
+                >
+                  Back to sign in
+                </button>
+              </p>
+            ) : (
+              <p className="text-center text-sm text-sparrow-gray">
+                {mode === 'sign-in' ? 'First time here?' : 'Already have a password?'}{' '}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode(mode === 'sign-in' ? 'sign-up' : 'sign-in');
+                    setError(null);
+                    setNotice(null);
+                  }}
+                  className="font-medium text-sparrow-green underline"
+                >
+                  {mode === 'sign-in' ? 'Create your password' : 'Sign in'}
+                </button>
+              </p>
+            )}
           </form>
         ) : (
           <div className="mt-6 rounded-lg bg-sparrow-cream p-4 text-left text-sm text-sparrow-ink">

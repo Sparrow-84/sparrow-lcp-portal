@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useAuth } from '@/auth/AuthContext';
 import { Login } from '@/pages/Login';
 import { Dashboard } from '@/pages/Dashboard';
+import { ResetPassword } from '@/pages/ResetPassword';
 import { initOneSignal, loginOneSignal, logoutOneSignal } from '@/lib/push';
 
 initOneSignal();
@@ -15,7 +16,7 @@ function Splash({ message }: { message: string }) {
 }
 
 export function App() {
-  const { session, family, loading, signOut } = useAuth();
+  const { session, family, loading, passwordRecovery, signOut } = useAuth();
 
   useEffect(() => {
     if (family?.id) loginOneSignal(family.id);
@@ -26,6 +27,7 @@ export function App() {
   }, [session]);
 
   if (loading) return <Splash message="Loading…" />;
+  if (passwordRecovery) return <ResetPassword />;
   if (!session) return <Login />;
 
   // Signed in but not linked to a LifeChange family. Shouldn't normally happen — the
