@@ -6,9 +6,11 @@ import type { Family } from '@/lib/types';
 interface Props {
   family: Family;
   onChanged: () => void;
+  onReplayTour: () => void;
+  onSignOut: () => void;
 }
 
-export function SettingsView({ family, onChanged }: Props) {
+export function AccountView({ family, onChanged, onReplayTour, onSignOut }: Props) {
   const [pushEnabled, setPushEnabled] = useState(family.push_enabled);
   const [pushBlocked, setPushBlocked] = useState(false);
 
@@ -24,7 +26,7 @@ export function SettingsView({ family, onChanged }: Props) {
   return (
     <div className="flex-1 overflow-y-auto p-4 md:p-8">
       <div className="mx-auto w-full max-w-3xl space-y-4">
-        <h1 className="font-serif text-2xl font-semibold">Settings</h1>
+        <h1 className="font-serif text-2xl font-semibold">Account</h1>
 
         <section className="card flex items-start justify-between gap-4">
           <div>
@@ -67,6 +69,22 @@ export function SettingsView({ family, onChanged }: Props) {
             />
           </button>
         </section>
+
+        <section className="card">
+          <button
+            onClick={onReplayTour}
+            className="text-sm font-medium text-sparrow-ink hover:text-sparrow-green"
+          >
+            Replay welcome tour
+          </button>
+        </section>
+
+        <button
+          onClick={onSignOut}
+          className="w-full rounded-xl border border-sparrow-rule px-4 py-2.5 text-sm font-medium text-sparrow-gray transition hover:bg-sparrow-mist hover:text-sparrow-ink"
+        >
+          Sign out
+        </button>
       </div>
     </div>
   );

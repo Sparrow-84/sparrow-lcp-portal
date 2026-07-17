@@ -38,7 +38,7 @@ import { GoalsView } from '@/components/GoalsView';
 import { BottomNav, type Tab } from '@/components/BottomNav';
 import { SideNav } from '@/components/SideNav';
 import { GuidedTour, useGuidedTour } from '@/components/GuidedTour';
-import { SettingsView } from '@/pages/SettingsView';
+import { AccountView } from '@/pages/AccountView';
 import { PushPrompt } from '@/components/PushPrompt';
 
 type DetailView =
@@ -138,7 +138,7 @@ export function Dashboard() {
   if (detail?.type === 'event') {
     return (
       <div className="min-h-screen bg-white md:flex">
-        <SideNav tab={tab} onChange={setTab} onSignOut={signOut} onReopenTour={reopenTour} unread={unread} />
+        <SideNav tab={tab} onChange={setTab} unread={unread} />
         <div className="mx-auto w-full max-w-phone md:max-w-2xl">
           <EventDetail
             event={detail.event}
@@ -156,7 +156,7 @@ export function Dashboard() {
     if (item) {
       return (
         <div className="min-h-screen bg-white md:flex">
-          <SideNav tab={tab} onChange={setTab} onSignOut={signOut} onReopenTour={reopenTour} unread={unread} />
+          <SideNav tab={tab} onChange={setTab} unread={unread} />
           <div className="mx-auto flex w-full max-w-phone flex-col md:max-w-2xl">
             <ItemDetail
               item={item}
@@ -180,7 +180,7 @@ export function Dashboard() {
       {!tourOpen && <PushPrompt onEnabled={() => void refreshFamily()} />}
 
       <div className="md:flex md:flex-1">
-      <SideNav tab={tab} onChange={setTab} onSignOut={signOut} onReopenTour={reopenTour} unread={unread} />
+      <SideNav tab={tab} onChange={setTab} unread={unread} />
 
       <div className="mx-auto flex min-h-screen w-full max-w-phone flex-col md:mx-0 md:max-w-none md:flex-1">
         {/* Mobile header */}
@@ -188,21 +188,11 @@ export function Dashboard() {
           <Wordmark />
           <div className="flex items-center gap-3">
             <button
-              onClick={reopenTour}
-              className="text-xs font-medium text-sparrow-gray hover:text-sparrow-ink"
-              aria-label="Show tour"
-            >
-              ?
-            </button>
-            <button
               onClick={() => setTab('settings')}
               className="text-xs font-medium text-sparrow-gray hover:text-sparrow-ink"
-              aria-label="Settings"
+              aria-label="Account"
             >
-              ⚙️
-            </button>
-            <button onClick={signOut} className="text-xs font-medium text-sparrow-gray hover:text-sparrow-ink">
-              Sign out
+              👤 Account
             </button>
           </div>
         </header>
@@ -293,7 +283,12 @@ export function Dashboard() {
               </div>
             </div>
           ) : tab === 'settings' ? (
-            <SettingsView family={family} onChanged={() => void refreshFamily()} />
+            <AccountView
+              family={family}
+              onChanged={() => void refreshFamily()}
+              onReplayTour={reopenTour}
+              onSignOut={signOut}
+            />
           ) : null}
         </main>
 

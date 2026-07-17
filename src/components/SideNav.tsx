@@ -5,14 +5,10 @@ import { TABS, type Tab } from './BottomNav';
 export function SideNav({
   tab,
   onChange,
-  onSignOut,
-  onReopenTour,
   unread = 0,
 }: {
   tab: Tab;
   onChange: (t: Tab) => void;
-  onSignOut: () => void;
-  onReopenTour?: () => void;
   unread?: number;
 }) {
   return (
@@ -44,14 +40,6 @@ export function SideNav({
         })}
       </nav>
 
-      {onReopenTour && (
-        <button
-          onClick={onReopenTour}
-          className="rounded-lg px-3 py-2 text-left text-sm font-medium text-sparrow-gray hover:bg-sparrow-mist hover:text-sparrow-ink"
-        >
-          ? Tour
-        </button>
-      )}
       <button
         onClick={() => onChange('settings')}
         className={`rounded-lg px-3 py-2 text-left text-sm font-medium transition ${
@@ -60,13 +48,7 @@ export function SideNav({
             : 'text-sparrow-gray hover:bg-sparrow-mist hover:text-sparrow-ink'
         }`}
       >
-        ⚙️ Settings
-      </button>
-      <button
-        onClick={onSignOut}
-        className="mt-1 rounded-lg px-3 py-2 text-left text-sm font-medium text-sparrow-gray hover:bg-sparrow-mist hover:text-sparrow-ink"
-      >
-        Sign out
+        👤 Account
       </button>
     </aside>
   );
