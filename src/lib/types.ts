@@ -20,6 +20,7 @@ export interface Family {
   status: FamilyStatus;
   current_session_number: number;
   housing_savings_cents: number;
+  push_enabled: boolean;
 }
 
 export interface CurrentSession {

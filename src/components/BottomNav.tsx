@@ -1,4 +1,7 @@
-export type Tab = 'home' | 'goals' | 'messages' | 'rewards' | 'roadmap';
+// 'settings' is intentionally not in TABS below — it's reachable via a separate
+// utility button (SideNav footer on desktop, header icon on mobile), not the main
+// 5-tab bar, so the established primary nav doesn't change.
+export type Tab = 'home' | 'goals' | 'messages' | 'rewards' | 'roadmap' | 'settings';
 
 export const TABS: { key: Tab; label: string; icon: string }[] = [
   { key: 'home', label: 'Home', icon: '🏠' },

@@ -23,9 +23,16 @@ import type {
 export async function getMyFamily(): Promise<Family | null> {
   const { data } = await supabase
     .from('families')
-    .select('id, display_name, login_email, status, current_session_number, housing_savings_cents')
+    .select('id, display_name, login_email, status, current_session_number, housing_savings_cents, push_enabled')
     .maybeSingle();
   return (data as Family) ?? null;
+}
+
+// families_write RLS is staff-only, so this goes through a narrow SECURITY
+// DEFINER RPC rather than a direct table update (migration 0075).
+export async function setFamilyPushEnabled(enabled: boolean): Promise<void> {
+  const { error } = await supabase.rpc('set_my_family_push_enabled', { p_enabled: enabled });
+  if (error) throw new Error(error.message);
 }
 
 export async function getCurrentSession(sessionNumber: number): Promise<CurrentSession | null> {

@@ -53,6 +53,16 @@ export function SideNav({
         </button>
       )}
       <button
+        onClick={() => onChange('settings')}
+        className={`rounded-lg px-3 py-2 text-left text-sm font-medium transition ${
+          tab === 'settings'
+            ? 'bg-sparrow-sage text-sparrow-green'
+            : 'text-sparrow-gray hover:bg-sparrow-mist hover:text-sparrow-ink'
+        }`}
+      >
+        ⚙️ Settings
+      </button>
+      <button
         onClick={onSignOut}
         className="mt-1 rounded-lg px-3 py-2 text-left text-sm font-medium text-sparrow-gray hover:bg-sparrow-mist hover:text-sparrow-ink"
       >

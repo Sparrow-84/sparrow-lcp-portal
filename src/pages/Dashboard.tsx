@@ -38,6 +38,8 @@ import { GoalsView } from '@/components/GoalsView';
 import { BottomNav, type Tab } from '@/components/BottomNav';
 import { SideNav } from '@/components/SideNav';
 import { GuidedTour, useGuidedTour } from '@/components/GuidedTour';
+import { SettingsView } from '@/pages/SettingsView';
+import { PushPrompt } from '@/components/PushPrompt';
 
 type DetailView =
   | { type: 'event'; event: LcpEvent }
@@ -173,9 +175,11 @@ export function Dashboard() {
 
   // ── Main tabs ─────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-sparrow-mist md:flex">
+    <div className="min-h-screen bg-sparrow-mist md:flex md:flex-col">
       {tourOpen && <GuidedTour onDismiss={dismissTour} />}
+      {!tourOpen && <PushPrompt onEnabled={() => void refreshFamily()} />}
 
+      <div className="md:flex md:flex-1">
       <SideNav tab={tab} onChange={setTab} onSignOut={signOut} onReopenTour={reopenTour} unread={unread} />
 
       <div className="mx-auto flex min-h-screen w-full max-w-phone flex-col md:mx-0 md:max-w-none md:flex-1">
@@ -189,6 +193,13 @@ export function Dashboard() {
               aria-label="Show tour"
             >
               ?
+            </button>
+            <button
+              onClick={() => setTab('settings')}
+              className="text-xs font-medium text-sparrow-gray hover:text-sparrow-ink"
+              aria-label="Settings"
+            >
+              ⚙️
             </button>
             <button onClick={signOut} className="text-xs font-medium text-sparrow-gray hover:text-sparrow-ink">
               Sign out
@@ -281,10 +292,13 @@ export function Dashboard() {
                 <MissionFooter />
               </div>
             </div>
+          ) : tab === 'settings' ? (
+            <SettingsView family={family} onChanged={() => void refreshFamily()} />
           ) : null}
         </main>
 
         <BottomNav tab={tab} onChange={(t) => { setDetail(null); setTab(t); }} unread={unread} className="md:hidden" />
+      </div>
       </div>
     </div>
   );
