@@ -29,7 +29,11 @@ export function Login() {
       });
       // Same confident message either way — no need to hedge just because we're
       // deliberately not revealing whether the email is on file.
-      setNotice(error ? error.message : 'Check your email — a reset link is on its way.');
+      setNotice(
+        error
+          ? error.message
+          : 'Check your email for a reset link — it comes from Supabase, not Sparrow directly, so peek in spam/junk if you don’t see it.',
+      );
     } else if (mode === 'sign-in') {
       const { error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
       if (error) setError('That email or password didn’t work. Want to create your password instead?');
@@ -48,7 +52,9 @@ export function Login() {
             : error.message,
         );
       } else if (!data.session) {
-        setNotice('Almost there — check your email to confirm your account, then sign in.');
+        setNotice(
+          'Almost there — check your email to confirm your account, then sign in. It comes from Supabase, not Sparrow directly, so peek in spam/junk if you don’t see it.',
+        );
         setMode('sign-in');
       }
       // if a session came back, AuthContext takes over.
