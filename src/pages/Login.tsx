@@ -27,8 +27,9 @@ export function Login() {
       const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
         redirectTo: window.location.origin,
       });
-      // Don't reveal whether the email is on file — same message either way.
-      setNotice(error ? error.message : 'If that email has an account, a reset link is on its way.');
+      // Same confident message either way — no need to hedge just because we're
+      // deliberately not revealing whether the email is on file.
+      setNotice(error ? error.message : 'Check your email — a reset link is on its way.');
     } else if (mode === 'sign-in') {
       const { error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
       if (error) setError('That email or password didn’t work. Want to create your password instead?');
