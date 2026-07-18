@@ -1,5 +1,6 @@
 import { Wordmark } from './Wordmark';
 import { TABS, type Tab } from './BottomNav';
+import { AccountIcon } from './NavIcons';
 
 /** Desktop-only left nav (md+). Mobile uses BottomNav instead. */
 export function SideNav({
@@ -30,7 +31,7 @@ export function SideNav({
                   : 'text-sparrow-gray hover:bg-sparrow-mist hover:text-sparrow-ink'
               }`}
             >
-              <span className="text-lg">{t.icon}</span>
+              <t.Icon className="h-5 w-5" />
               <span className="flex-1">{t.label}</span>
               {t.key === 'messages' && unread > 0 && (
                 <span className="rounded-full bg-red-600 px-1.5 text-[10px] font-semibold text-white">{unread}</span>
@@ -42,13 +43,14 @@ export function SideNav({
 
       <button
         onClick={() => onChange('settings')}
-        className={`rounded-lg px-3 py-2 text-left text-sm font-medium transition ${
+        className={`flex items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition ${
           tab === 'settings'
             ? 'bg-sparrow-sage text-sparrow-green'
             : 'text-sparrow-gray hover:bg-sparrow-mist hover:text-sparrow-ink'
         }`}
       >
-        👤 Account
+        <AccountIcon className="h-5 w-5" />
+        Account
       </button>
     </aside>
   );

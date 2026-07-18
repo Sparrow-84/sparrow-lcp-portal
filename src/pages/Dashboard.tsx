@@ -26,6 +26,7 @@ import type {
   WeekItem,
 } from '@/lib/types';
 import { Wordmark } from '@/components/Wordmark';
+import { AccountIcon } from '@/components/NavIcons';
 import { MissionFooter } from '@/components/MissionFooter';
 import { WeekItems } from '@/components/WeekItems';
 import { MeetingsSection } from '@/components/MeetingsSection';
@@ -189,10 +190,11 @@ export function Dashboard() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setTab('settings')}
-              className="text-xs font-medium text-sparrow-gray hover:text-sparrow-ink"
+              className="flex items-center gap-1.5 text-xs font-medium text-sparrow-gray hover:text-sparrow-ink"
               aria-label="Account"
             >
-              👤 Account
+              <AccountIcon className="h-4 w-4" />
+              Account
             </button>
           </div>
         </header>

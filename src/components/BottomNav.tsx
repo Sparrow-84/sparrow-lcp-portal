@@ -1,14 +1,17 @@
+import type { ComponentType } from 'react';
+import { GoalsIcon, HomeIcon, JourneyIcon, MessagesIcon, PerksIcon } from './NavIcons';
+
 // 'settings' is intentionally not in TABS below — it's reachable via a separate
 // utility button (SideNav footer on desktop, header icon on mobile), not the main
 // 5-tab bar, so the established primary nav doesn't change.
 export type Tab = 'home' | 'goals' | 'messages' | 'rewards' | 'roadmap' | 'settings';
 
-export const TABS: { key: Tab; label: string; icon: string }[] = [
-  { key: 'home', label: 'Home', icon: '🏠' },
-  { key: 'goals', label: 'Goals', icon: '⭐' },
-  { key: 'messages', label: 'Messages', icon: '💬' },
-  { key: 'roadmap', label: 'Journey', icon: '🗺️' },
-  { key: 'rewards', label: 'Perks', icon: '✨' },
+export const TABS: { key: Tab; label: string; Icon: ComponentType<{ className?: string }> }[] = [
+  { key: 'home', label: 'Home', Icon: HomeIcon },
+  { key: 'goals', label: 'Goals', Icon: GoalsIcon },
+  { key: 'messages', label: 'Messages', Icon: MessagesIcon },
+  { key: 'roadmap', label: 'Journey', Icon: JourneyIcon },
+  { key: 'rewards', label: 'Perks', Icon: PerksIcon },
 ];
 
 export function BottomNav({
@@ -36,7 +39,7 @@ export function BottomNav({
               active ? 'text-sparrow-green' : 'text-sparrow-gray'
             }`}
           >
-            <span className={`text-lg ${active ? '' : 'opacity-70'}`}>{t.icon}</span>
+            <t.Icon className={`h-5 w-5 ${active ? '' : 'opacity-70'}`} />
             {t.label}
             {t.key === 'messages' && unread > 0 && (
               <span className="absolute right-1/2 top-1.5 translate-x-4 rounded-full bg-red-600 px-1.5 text-[9px] font-semibold text-white">
