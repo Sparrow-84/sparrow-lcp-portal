@@ -182,7 +182,11 @@ export async function sendMessage(
 }
 
 export async function uploadLcpVoice(blob: Blob, familyId: string): Promise<{ url: string }> {
-  const ext = blob.type.includes('mp4') || blob.type.includes('aac') ? 'm4a' : 'webm';
+  const ext = blob.type.includes('mpeg')
+    ? 'mp3'
+    : blob.type.includes('mp4') || blob.type.includes('aac')
+      ? 'm4a'
+      : 'webm';
   const path = `${familyId}/${Date.now()}.${ext}`;
   const { error } = await supabase.storage
     .from('lcp-voice-messages')
