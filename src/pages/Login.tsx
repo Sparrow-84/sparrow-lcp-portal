@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import { Wordmark } from '@/components/Wordmark';
 import { MissionFooter } from '@/components/MissionFooter';
+import { useRequiredFields } from '@/hooks/useRequiredFields';
 
 type Mode = 'sign-in' | 'sign-up' | 'reset-request';
 
@@ -13,8 +14,21 @@ export function Login() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
+  const { missingMessage, validate, fieldClass, clear, reset: resetValidation } = useRequiredFields([
+    { key: 'email', label: 'Email', valid: email.trim().length > 0 },
+    { key: 'password', label: 'Password', valid: mode === 'reset-request' || password.length >= 8 },
+  ]);
+
+  function switchMode(next: Mode) {
+    setMode(next);
+    setError(null);
+    setNotice(null);
+    resetValidation();
+  }
+
   async function submit(e: FormEvent) {
     e.preventDefault();
+    if (!validate() || busy) return;
     setBusy(true);
     setError(null);
     setNotice(null);
@@ -81,8 +95,8 @@ export function Login() {
                 autoComplete="email"
                 required
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="field-input"
+                onChange={(e) => { setEmail(e.target.value); clear('email'); }}
+                className={fieldClass('email')}
               />
             </div>
             {mode !== 'reset-request' && (
@@ -97,8 +111,8 @@ export function Login() {
                   required
                   minLength={8}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="field-input"
+                  onChange={(e) => { setPassword(e.target.value); clear('password'); }}
+                  className={fieldClass('password')}
                 />
               </div>
             )}
@@ -106,13 +120,14 @@ export function Login() {
             {mode === 'sign-in' && (
               <button
                 type="button"
-                onClick={() => { setMode('reset-request'); setError(null); setNotice(null); }}
+                onClick={() => switchMode('reset-request')}
                 className="text-xs font-medium text-sparrow-green underline"
               >
                 Forgot your password?
               </button>
             )}
 
+            {missingMessage && <p className="text-sm text-red-600">{missingMessage}</p>}
             {error && <p className="text-sm text-red-600">{error}</p>}
             {notice && <p className="text-sm text-sparrow-green">{notice}</p>}
 
@@ -130,7 +145,7 @@ export function Login() {
               <p className="text-center text-sm text-sparrow-gray">
                 <button
                   type="button"
-                  onClick={() => { setMode('sign-in'); setError(null); setNotice(null); }}
+                  onClick={() => switchMode('sign-in')}
                   className="font-medium text-sparrow-green underline"
                 >
                   Back to sign in
@@ -141,11 +156,7 @@ export function Login() {
                 {mode === 'sign-in' ? 'First time here?' : 'Already have a password?'}{' '}
                 <button
                   type="button"
-                  onClick={() => {
-                    setMode(mode === 'sign-in' ? 'sign-up' : 'sign-in');
-                    setError(null);
-                    setNotice(null);
-                  }}
+                  onClick={() => switchMode(mode === 'sign-in' ? 'sign-up' : 'sign-in')}
                   className="font-medium text-sparrow-green underline"
                 >
                   {mode === 'sign-in' ? 'Create your password' : 'Sign in'}

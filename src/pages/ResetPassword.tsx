@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Wordmark } from '@/components/Wordmark';
 import { useAuth } from '@/auth/AuthContext';
+import { useRequiredFields } from '@/hooks/useRequiredFields';
 
 export function ResetPassword() {
   const { clearPasswordRecovery } = useAuth();
@@ -11,8 +12,14 @@ export function ResetPassword() {
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
+  const { missingMessage, validate, fieldClass, clear } = useRequiredFields([
+    { key: 'new-password', label: 'New password', valid: password.length >= 8 },
+    { key: 'confirm-password', label: 'Confirm new password', valid: confirm.length >= 8 },
+  ]);
+
   async function submit(e: FormEvent) {
     e.preventDefault();
+    if (!validate() || busy) return;
     if (password !== confirm) {
       setError('Those passwords don’t match — try again.');
       return;
@@ -54,8 +61,8 @@ export function ResetPassword() {
                 required
                 minLength={8}
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="field-input"
+                onChange={(e) => { setPassword(e.target.value); clear('new-password'); }}
+                className={fieldClass('new-password')}
               />
             </div>
             <div>
@@ -69,11 +76,12 @@ export function ResetPassword() {
                 required
                 minLength={8}
                 value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
-                className="field-input"
+                onChange={(e) => { setConfirm(e.target.value); clear('confirm-password'); }}
+                className={fieldClass('confirm-password')}
               />
             </div>
 
+            {missingMessage && <p className="text-sm text-red-600">{missingMessage}</p>}
             {error && <p className="text-sm text-red-600">{error}</p>}
 
             <button type="submit" disabled={busy} className="btn-primary w-full">
