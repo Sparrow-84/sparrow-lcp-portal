@@ -52,6 +52,7 @@ export function MessagesView({
   const [busy, setBusy] = useState(false);
   const [recording, setRecording] = useState(false);
   const [pickingImage, setPickingImage] = useState(false);
+  const [pastedFile, setPastedFile] = useState<File | null>(null);
   // Reply / quote
   const [replyTo, setReplyTo] = useState<Message | null>(null);
   // Edit
@@ -130,6 +131,15 @@ export function MessagesView({
     const { url } = await uploadLcpVoice(blob, familyId);
     await sendMessage(familyId, '', { url, duration });
     onChange();
+  }
+
+  function handlePaste(e: React.ClipboardEvent<HTMLTextAreaElement>) {
+    const item = Array.from(e.clipboardData.items).find((i) => i.type.startsWith('image/'));
+    const f = item?.getAsFile();
+    if (!f) return;
+    e.preventDefault();
+    setPastedFile(f);
+    setPickingImage(true);
   }
 
   async function handleSendImage(file: File) {
@@ -333,8 +343,9 @@ export function MessagesView({
         <VoiceRecorder onClose={() => setRecording(false)} onSend={handleSendVoice} />
       ) : pickingImage ? (
         <ImagePicker
-          onClose={() => setPickingImage(false)}
+          onClose={() => { setPickingImage(false); setPastedFile(null); }}
           onSend={handleSendImage}
+          initialFile={pastedFile ?? undefined}
         />
       ) : (
         <div className="border-t border-sparrow-rule bg-white">
@@ -369,6 +380,7 @@ export function MessagesView({
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); void send(); }
               }}
+              onPaste={handlePaste}
               placeholder="Write a message…"
               rows={1}
               disabled={busy}
