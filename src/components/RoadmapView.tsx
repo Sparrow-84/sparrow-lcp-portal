@@ -59,7 +59,9 @@ async function fetchRoadmap(): Promise<RoadmapPhase[]> {
     .select(
       'id, number, name, sort_order, units:lcp_units(id, name, sort_order, sessions:lcp_sessions(session_number))',
     )
-    .order('sort_order');
+    .order('sort_order')
+    .order('sort_order', { referencedTable: 'units' })
+    .order('session_number', { referencedTable: 'units.sessions' });
   return (data as RoadmapPhase[]) ?? [];
 }
 
