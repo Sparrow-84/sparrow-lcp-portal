@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase';
 import type {
   CurrentSession,
   Family,
+  FamilyCalendarEvent,
   FamilyMilestoneProgress,
   FinanceMilestone,
   Goal,
@@ -153,6 +154,15 @@ export async function getUpcomingEvents(limit = 6): Promise<LcpEvent[]> {
     .order('starts_at', { ascending: true })
     .limit(limit);
   return (data as LcpEvent[]) ?? [];
+}
+
+// Deliberately a narrow RPC, not a table select — staff/team-calendar detail
+// (notes, comments, RSVP responses, labels) can never reach this app even in
+// principle, since the function itself only ever returns title/date/time.
+export async function getFamilyCalendarEvents(): Promise<FamilyCalendarEvent[]> {
+  const { data, error } = await supabase.rpc('fetch_lcp_family_calendar_events');
+  if (error) throw new Error(error.message);
+  return (data as FamilyCalendarEvent[]) ?? [];
 }
 
 export async function getMessages(familyId: string): Promise<Message[]> {

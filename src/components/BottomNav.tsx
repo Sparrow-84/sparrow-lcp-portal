@@ -1,16 +1,17 @@
 import type { ComponentType } from 'react';
-import { GoalsIcon, HomeIcon, JourneyIcon, MessagesIcon, PerksIcon } from './NavIcons';
+import { CalendarIcon, GoalsIcon, HomeIcon, JourneyIcon, MessagesIcon, PerksIcon } from './NavIcons';
 
 // 'settings' is intentionally not in TABS below — it's reachable via a separate
 // utility button (SideNav footer on desktop, header icon on mobile), not the main
-// 5-tab bar, so the established primary nav doesn't change.
-export type Tab = 'home' | 'goals' | 'messages' | 'rewards' | 'roadmap' | 'settings';
+// nav bar, so that pattern doesn't change.
+export type Tab = 'home' | 'goals' | 'messages' | 'rewards' | 'roadmap' | 'calendar' | 'settings';
 
 export const TABS: { key: Tab; label: string; Icon: ComponentType<{ className?: string }> }[] = [
   { key: 'home', label: 'Home', Icon: HomeIcon },
   { key: 'goals', label: 'Goals', Icon: GoalsIcon },
   { key: 'messages', label: 'Messages', Icon: MessagesIcon },
   { key: 'roadmap', label: 'Journey', Icon: JourneyIcon },
+  { key: 'calendar', label: 'Calendar', Icon: CalendarIcon },
   { key: 'rewards', label: 'Perks', Icon: PerksIcon },
 ];
 

@@ -98,6 +98,16 @@ export interface LcpEvent {
   rsvp_enabled: boolean;
 }
 
+/** Name/date/time only, on purpose — this is all a shared-calendar entry
+ *  from staff is ever allowed to expose to families, via a dedicated
+ *  narrow RPC (fetch_lcp_family_calendar_events), never the raw event. */
+export interface FamilyCalendarEvent {
+  id: string;
+  title: string;
+  starts_at: string;
+  ends_at: string | null;
+}
+
 export interface Message {
   id: string;
   family_id: string;

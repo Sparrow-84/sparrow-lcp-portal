@@ -35,6 +35,7 @@ import { RewardsView } from '@/components/RewardsView';
 import { EventDetail, buildCantMakeitDraft } from '@/components/EventDetail';
 import { ItemDetail } from '@/components/ItemDetail';
 import { RoadmapView } from '@/components/RoadmapView';
+import { CalendarView } from '@/components/CalendarView';
 import { GoalsView } from '@/components/GoalsView';
 import { BottomNav, type Tab } from '@/components/BottomNav';
 import { SideNav } from '@/components/SideNav';
@@ -281,6 +282,13 @@ export function Dashboard() {
             <div className="flex-1 overflow-y-auto p-4 md:p-8">
               <div className="mx-auto w-full max-w-3xl">
                 <RoadmapView currentSession={currentSessionNumber} familyId={family.id} />
+                <MissionFooter />
+              </div>
+            </div>
+          ) : tab === 'calendar' ? (
+            <div className="flex-1 overflow-y-auto p-4 md:p-8">
+              <div className="mx-auto w-full max-w-3xl">
+                <CalendarView />
                 <MissionFooter />
               </div>
             </div>
