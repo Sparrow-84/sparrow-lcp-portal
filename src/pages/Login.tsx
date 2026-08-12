@@ -14,7 +14,7 @@ export function Login() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  const { missingMessage, validate, fieldClass, clear, reset: resetValidation } = useRequiredFields([
+  const { missingMessage, validate, fieldClass, fieldError, clear, reset: resetValidation } = useRequiredFields([
     { key: 'email', label: 'Email', valid: email.trim().length > 0 },
     { key: 'password', label: 'Password', valid: mode === 'reset-request' || password.length >= 8 },
   ]);
@@ -86,7 +86,7 @@ export function Login() {
         {isSupabaseConfigured ? (
           <form onSubmit={submit} className="mt-6 space-y-4 text-left">
             <div>
-              <label className="field-label" htmlFor="email">
+              <label className="field-label field-label-required" htmlFor="email">
                 Email
               </label>
               <input
@@ -98,10 +98,11 @@ export function Login() {
                 onChange={(e) => { setEmail(e.target.value); clear('email'); }}
                 className={fieldClass('email')}
               />
+              {fieldError('email') && <p className="mt-1 text-xs text-red-600">{fieldError('email')}</p>}
             </div>
             {mode !== 'reset-request' && (
               <div>
-                <label className="field-label" htmlFor="password">
+                <label className="field-label field-label-required" htmlFor="password">
                   Password
                 </label>
                 <input
@@ -114,6 +115,7 @@ export function Login() {
                   onChange={(e) => { setPassword(e.target.value); clear('password'); }}
                   className={fieldClass('password')}
                 />
+                {fieldError('password') && <p className="mt-1 text-xs text-red-600">{fieldError('password')}</p>}
               </div>
             )}
 

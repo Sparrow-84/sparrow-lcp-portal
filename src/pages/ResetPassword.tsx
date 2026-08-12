@@ -12,7 +12,7 @@ export function ResetPassword() {
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
-  const { missingMessage, validate, fieldClass, clear } = useRequiredFields([
+  const { missingMessage, validate, fieldClass, fieldError, clear } = useRequiredFields([
     { key: 'new-password', label: 'New password', valid: password.length >= 8 },
     { key: 'confirm-password', label: 'Confirm new password', valid: confirm.length >= 8 },
   ]);
@@ -51,7 +51,7 @@ export function ResetPassword() {
         ) : (
           <form onSubmit={submit} className="mt-6 space-y-4 text-left">
             <div>
-              <label className="field-label" htmlFor="new-password">
+              <label className="field-label field-label-required" htmlFor="new-password">
                 New password
               </label>
               <input
@@ -64,9 +64,10 @@ export function ResetPassword() {
                 onChange={(e) => { setPassword(e.target.value); clear('new-password'); }}
                 className={fieldClass('new-password')}
               />
+              {fieldError('new-password') && <p className="mt-1 text-xs text-red-600">{fieldError('new-password')}</p>}
             </div>
             <div>
-              <label className="field-label" htmlFor="confirm-password">
+              <label className="field-label field-label-required" htmlFor="confirm-password">
                 Confirm new password
               </label>
               <input
@@ -79,6 +80,7 @@ export function ResetPassword() {
                 onChange={(e) => { setConfirm(e.target.value); clear('confirm-password'); }}
                 className={fieldClass('confirm-password')}
               />
+              {fieldError('confirm-password') && <p className="mt-1 text-xs text-red-600">{fieldError('confirm-password')}</p>}
             </div>
 
             {missingMessage && <p className="text-sm text-red-600">{missingMessage}</p>}

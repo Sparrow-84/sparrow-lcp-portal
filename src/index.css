@@ -32,6 +32,12 @@
   .field-input-error {
     @apply border-red-600 focus:border-red-600 focus:ring-red-600;
   }
+  /* Red asterisk after a required field's label — pair with .field-input-error
+     and a "Required" caption (via useRequiredFields' fieldError) on the input itself. */
+  .field-label-required::after {
+    content: ' *';
+    @apply text-red-600;
+  }
   .card {
     @apply rounded-2xl border border-sparrow-rule bg-white p-5 shadow-card;
   }
